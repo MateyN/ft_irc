@@ -48,6 +48,16 @@
 	- [ ] connect to port password :
 		- [ ] *register* its connection (NICK, USER)
 
+# Schedule
+
+| date  | milestone                               |
+|-------|-----------------------------------------|
+| 15.08 | read rfc 1-3,4,6                        |
+| 22.08 | handling multiple clients               |
+| 29.08 | standalone irc server complete          |
+| 05.09 | standalone irc server tested thoroughly |
+| 12.09 | push                                    |
+
 # Doc
 
 - Internet Relay Chat : textual communication protocol on Intrnet, instant, discussions in groups via channels and 1-1
@@ -65,6 +75,19 @@
 - [Socket Programming In C++:A Beginner's Guide](https://marketsplash.com/tutorials/cpp/cplusplus-scoket/)
 - [UChicago X-Projects](http://chi.cs.uchicago.edu/chirc/irc_examples.html)
 - [Modern IRC Client Protocol (Allnutt, Oaks & Lorentz, WIP)](https://modern.ircdocs.horse/)
+- [Similar project with guidelines](https://www.cs.cmu.edu/~srini/15-441/S10/project1/pj1_description.pdf)
+	- IRC is composed of a set of nodes
+	- Each node runs a process called routing daemon
+	- `nodeID` = 1
+	- `destination` = IRC nickname or channel as a null terminated char string (9 char long and no spaces)
+	- [ ] read sections 1-3 o RFC 1459 (do not focus on details, understand role of clients and server)
+	- [ ] read 4 and 6 of RFC 1459 (high level)
+	- [ ] return to 1-3 with implementation eyes + think about data structures to maintiain, what info needs to be stored about each client ?
+	- [ ] start with simple server that accepts connections from multiple clients. Take a message and refet to all clients (including sender). This will let you focus on socket programming aspects of a server
+	- [ ] write standalone IRC srrver, decompose problem to test each part, find common taskss among different commands and group them into procedure to avoid writing the same code twice : start by implementing the routines that read and parse commands, then implement commands one by one testing each
+	- [ ] Be liberal in what you accept and conervative in what you send (RFC 1122: http://www.ietf.org/rfc/rfc1122.txt, page 11)
+	- [ ] Your code should be modular, extensible, readable
+	- [ ] [Unix socket FAQ C++](http://developerweb.net/viewforum.php?id=59)
 
 <!--
 #include <arpa/inet.h>	// htons(), htonl(), htohl(), inet_addr(), inet_ntoa()
