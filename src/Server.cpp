@@ -1,5 +1,32 @@
 #include "../inc/Server.hpp"
 
+Server::Server(Server const & src)
+{
+	std::cout << "Copy Constructor Server Called" << std::endl;
+	*this = src;
+	return;
+}
+
+// Copy assignment operator
+Server& Server::operator=(Server const & rhs)
+{
+    std::cout << "Copy Assignment Operator Server Called" << std::endl;
+    if (this != &rhs)
+    {
+        this->serverSocket = rhs.serverSocket;
+        this->maxClients = rhs.maxClients;
+        this->password = rhs.password;
+    }
+    return *this;
+}
+
+// Default Destructor 
+Server::~Server(void)
+{
+	std::cout << "Destructor Server Called" << std::endl;
+	return;
+}
+
 Server::Server(int port, const std::string &pass) : maxClients(10), password(pass)
 {
     setupServerSocket(port);
