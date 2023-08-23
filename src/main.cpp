@@ -1,17 +1,21 @@
-#include <iostream>
-#include <string>
+#include "Server.hpp"
 
-static int	err(std::string s)
+int main(int ac, char *av[])
 {
-	std::cerr << s << std::endl;
-	return (1);
+    (void) av;
+    if (ac != 3)
+    {
+        return Server::err("error: bad arguments, must have <port> <password>");
+    }
+
+    int port = std::atoi(av[1]);
+    const char* password = av[2];
+
+    Server ircServer(port, password);
+    ircServer.run();
+
+    return 0;
 }
-
-int	main (int ac, char *av[])
-{
-	(void) av;
-	if (ac != 3) 
-		return (err("error: bad arguments, must have <port> <password>"));
 //	ConfigFile 	IRCconfig("./srcs/irc.config");
 //	Server		*serv = NULL;
 //	try
@@ -27,4 +31,4 @@ int	main (int ac, char *av[])
 //	}
 //	delete serv;
 //	exit(EXIT_SUCCESS);
-}
+//}

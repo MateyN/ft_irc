@@ -1,47 +1,56 @@
-# include "Server.hpp"
-# include <iostream>
+#include "../inc/Server.hpp"
 
-// PUBLIC
-
-// Default Constructor 
-Server::Server(void)
+Server::Server(int port, const std::string &pass) : maxClients(10), password(pass)
 {
-	std::cout << "Default Constructor Server Called" << std::endl;
-	return;
+    setupServerSocket(port);
 }
 
-// Copy Constructor 
-Server::Server(Server const & src)
+void Server::setupServerSocket(int port) 
 {
-	std::cout << "Copy Constructor Server Called" << std::endl;
-	*this = src;
-	return;
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == -1)
+	{
+        err("Socket error");
+        exit(1);
+    }
+    // ...
 }
 
-// Copy assignment operator
-Server &	Server::operator=(Server const & rhs)
+void Server::run()
 {
-	std::cout << "Copy Assignment Operator Constructor Server Called" << std::endl;
-	if (this != &rhs)
-		this->_server = rhs.getServer();
-	return *this;
+    while (true)
+	{
+        acceptClients();
+        // Handle client connections and other server tasks
+    }
 }
 
-// Default Destructor 
-Server::~Server(void)
+void Server::acceptClients()
 {
-	std::cout << "Destructor Server Called" << std::endl;
-	return;
+    sockaddr_in clientAddr;
+    socklen_t addrLen = sizeof(clientAddr);
+    int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
+
+    if (clientSocket != -1)
+	{
+        // Set client socket to non-blocking
+        fcntl(clientSocket, F_SETFL, O_NONBLOCK);
+
+        handleClientConnection(clientSocket);
+    }
 }
 
-int	Server::getServer(void) const
+void Server::handleClientConnection(int clientSocket)
 {
-	return this->_server;
+    
 }
 
-int	Server::getNbInst(void)
+int Server::getServer() const
 {
-	return Server::_nbInst;
+    return serverSocket;
 }
-// PRIVATE
 
+int Server::getNbInst()
+{
+    return Server::_nbInst;
+}

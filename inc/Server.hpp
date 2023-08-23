@@ -1,18 +1,41 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-class	Server
-{
-public:
-	Server(void);
-	Server(Server const & src);
-	Server&	operator=(Server const & rhs);
-	virtual ~Server(void);
+#include <iostream>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <fcntl.h>
 
-	int			getServer(void) const;
+class Server {
+public:
+    Server(int port, const std::string &pass);
+    Server(const Server& src);
+    Server& operator=(const Server &rhs);
+    virtual ~Server();
+
+    int getServer() const;
+    int getNbInst();
+
+    static int err(const std::string &s)
+	{
+        std::cerr << s << std::endl;
+        return 1;
+    }
+
+    void run();
 
 private:
+    int serverSocket;
+    int maxClients;
+    std::string password;
+
+	static int _nbInst;
+
+    void setupServerSocket(int port);
+    void acceptClients();
+    void handleClientConnection(int clientSocket);
 };
 
-#endif // SERVER_HPP
-
+#endif
