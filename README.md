@@ -1,6 +1,6 @@
 # ft_irc
 
-# Todo
+# TODO
 
 - [ ] subject requirements :
 	- [ ] C++ 98
