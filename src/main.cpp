@@ -1,4 +1,31 @@
 #include "Server.hpp"
+
+
+int main(int ac, char *av[])
+{
+	try
+	{
+		Server	server;
+		Client	client;
+
+		if (ac < 3)
+			throw (Server::ExceptionServer(ERRNOMSG"wronng arguments -> ./ircserv <port> <password>"));
+
+		server.setPort(atoi(av[1]));
+		server.setupServerSocket();
+		server.setPass(av[2]);
+
+		// need connection
+		return 0;
+	}
+	
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+}
+
+/*
 #include "../inc/xtos.hpp"
 
 static void			handler(int ac, char* av[])
@@ -101,9 +128,13 @@ int	main (int ac, char *av[])
 }
 
 	// To add before bind : lose the pesky "Address already in use" error essage, see end of 5.3
-	/* int	yes = 1; */
-	/* if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1) */
-	/* { */
-	/* 	std::cerr << "error: setsockopt" << std::endl; */
-	/* 	exit(4); */
-	/* } */
+	// int	yes = 1;
+	// if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof yes) == -1)
+	// {
+	// 	std::cerr << "error: setsockopt" << std::endl;
+	// 	exit(4);
+	// }
+
+	*/
+
+	

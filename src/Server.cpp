@@ -1,83 +1,78 @@
 #include "../inc/Server.hpp"
 
-Server::Server(Server const & src)
+Server::Server():   validPass(false), _socket(0), _port(0)
 {
-	std::cout << "Copy Constructor Server Called" << std::endl;
-	*this = src;
-	return;
+
 }
 
 // Copy assignment operator
 Server& Server::operator=(Server const & rhs)
 {
-    std::cout << "Copy Assignment Operator Server Called" << std::endl;
-    if (this != &rhs)
-    {
-        this->serverSocket = rhs.serverSocket;
-        this->maxClients = rhs.maxClients;
-        this->password = rhs.password;
-    }
-    return *this;
+    token = rhs.token;
+    cmd = rhs.cmd;
+    setNick = rhs.setNick;
+    validPass = rhs.validPass;
+    _port = rhs._port;
+    _socket = rhs._socket;
+    password = rhs.password;
+
+    return (*this);
 }
 
 // Default Destructor 
 Server::~Server(void)
 {
-	std::cout << "Destructor Server Called" << std::endl;
-	return;
+	//std::cout << "Destructor Server Called" << std::endl;
+	//return;
 }
 
-Server::Server(int port, const std::string &pass) : maxClients(10), password(pass)
+int Server::getSocket()
 {
-    setupServerSocket(port);
+    return (_socket);
 }
 
-void Server::setupServerSocket(int port) 
+int Server::getPort()
 {
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket == -1)
-	{
-        err("Socket error");
-        exit(1);
-    }
-    // ...
+    return (_port);
 }
 
-void Server::run()
+void    Server::setPort(int port)
 {
-    while (true)
-	{
-        acceptClients();
-        // Handle client connections and other server tasks
-    }
+    _port = port;
 }
 
-void Server::acceptClients()
+std::string Server::getPass()
 {
-    sockaddr_in clientAddr;
-    socklen_t addrLen = sizeof(clientAddr);
-    int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &addrLen);
-
-    if (clientSocket != -1)
-	{
-        // Set client socket to non-blocking
-        fcntl(clientSocket, F_SETFL, O_NONBLOCK);
-
-        handleClientConnection(clientSocket);
-    }
+    return password;
 }
 
-void Server::handleClientConnection(int clientSocket)
+void    Server::setPass(std::string pass)
 {
+    password = pass;
+}
+
+bool    Server::setupServerSocket()
+{
+    int clientSocket;
+
+    _socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (_socket == ERROR)
+		throw (Server::ExceptionServer(ERRNOMSG"error SOCK_STREAM"));
+
+    // Set client socket to non-blocking
+    clientSocket = fcntl(_socket, F_SETFL, O_NONBLOCK);
+    if (_socket == ERROR)
+        throw (Server::ExceptionServer(ERRNOMSG"error socket"));
     
-}
+    memset(&_addr, 0, sizeof _addr);
+    _addr.sin_family = AF_UNSPEC;		// don't care IPv4 or IPv6, AF = Address Family
+	_addr.sin_addr.s_addr = INADDR_ANY; // setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
+	_addr.sin_port = htons(_port); // setting the server's port number & converts it to network byte order.
 
-int Server::getServer() const
-{
-    return serverSocket;
-}
+    clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
+    if (clientSocket == ERROR)
+        throw (Server::ExceptionServer(ERRNOMSG"fail binding"));
+    // ERROR CHECKS
 
-int Server::getNbInst()
-{
-    return Server::_nbInst;
+    return (true);
 }

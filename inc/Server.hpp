@@ -3,49 +3,72 @@
 
 # define	PORT_MIN 1024
 # define	PORT_MAX 65535
+# define    ERRNOMSG "Error: "
+# define    ERROR -1
 //# define	MAX_CLIENTS 10		// backlog
 
+#include "Client.hpp"
 #include <iostream>
 #include <string>
+#include <stdexcept>
 #include <sstream>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <vector>
+#include <map>
 #include <fcntl.h>
 #include <netdb.h>
 #include <poll.h>
+#include <string>
+#include <cstring>
 #include <signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
-class Server {
-public:
-    Server(int port, const std::string &pass);
-    Server(const Server& src);
-    Server& operator=(const Server &rhs);
-    virtual ~Server();
+class Server
+{
+    public:
+        Server();
+        Server(const Server& src);
+        Server& operator=(const Server &rhs);
+        ~Server();
 
-    int getServer() const;
-    int getNbInst();
+        class ExceptionServer : public std::exception
+        {
+			public:
+				ExceptionServer(const char* msg) : _msg(msg) {}
+				const char* what() const throw()
+                {
+					return _msg;
+				}
 
-    static int err(const std::string &s)
-	{
-        std::cerr << s << std::endl;
-        return 1;
-    }
+			private:
+				const char* _msg;
+		};
 
-    void run();
+        std::string token;
+        std::string cmd;
+        bool        setNick;
+        bool        validPass;
 
-private:
-    int serverSocket;
-    int maxClients;
-    std::string password;
+        bool        setupServerSocket();
+        void        Sockets();
 
-	static int _nbInst;
+        int         getSocket();
+        int         getPort();
+        void        setPort(int port);
 
-    void setupServerSocket(int port);
-    void acceptClients();
-    void handleClientConnection(int clientSocket);
+        std::string getPass();
+        void        setPass(std::string pass);
+
+    private:
+        int                     _socket;
+        int                     _port;
+        std::string             password;
+        struct sockaddr_in		_addr;
+
 };
 
 #endif
