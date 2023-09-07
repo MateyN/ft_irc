@@ -4,10 +4,10 @@
 #include "Server.hpp"
 # include <iostream>
 # include <sys/socket.h>
-# include <netinet/in.h> // sockaddr_in, IPPROTO_TCP
-# include <arpa/inet.h> // hton*, ntoh*, inet_addr
-# include <unistd.h>  // close
-# include <cerrno> // errors
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <unistd.h>
+# include <cerrno>
 # include <stdexcept>
 # include <vector>
 # include <map>
@@ -22,17 +22,25 @@ class Client
         Client &operator=(const Client& rhs);
         ~Client();
 
-        bool    setNick;
-        int     getFD()const;
-        std::string getNickname();
-        void    setNickname(std::string nickname);
-        void    setUser(std::string user);
+        bool        _setNick;
+        bool        isRegister();
+
+        int         getFD()const;
+
+        void        setNickname(std::string nickname);
+        void        setIsRegister(bool registered);
+        void        setUser(std::string user);
+        
         std::string getUser();
+        std::string getNickname();
 
     private:
         int _fd;
+        
         std::string _nick;
         std::string _username;
+
+        bool        _isRegister;
 
 };
 

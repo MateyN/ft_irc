@@ -15,8 +15,9 @@ Server& Server::operator=(Server const & rhs)
     _port = rhs._port;
     _socket = rhs._socket;
     password = rhs.password;
+    _addr = rhs._addr;
 
-    return (*this);
+    return *this;
 }
 
 // Default Destructor 
@@ -24,6 +25,12 @@ Server::~Server(void)
 {
 	//std::cout << "Destructor Server Called" << std::endl;
 	//return;
+}
+
+// Getters
+std::string Server::getPass()
+{
+    return password;
 }
 
 int Server::getSocket()
@@ -36,14 +43,10 @@ int Server::getPort()
     return (_port);
 }
 
+// Setters
 void    Server::setPort(int port)
 {
     _port = port;
-}
-
-std::string Server::getPass()
-{
-    return password;
 }
 
 void    Server::setPass(std::string pass)
@@ -54,15 +57,20 @@ void    Server::setPass(std::string pass)
 bool    Server::setupServerSocket()
 {
     int clientSocket;
+    int opt_len;
 
     _socket = socket(AF_INET, SOCK_STREAM, 0);
     if (_socket == ERROR)
-		throw (Server::ExceptionServer(ERRNOMSG"error SOCK_STREAM"));
+		throw (Server::ExceptionServer(ERRNOMSG"error: SOCK_STREAM"));
 
     // Set client socket to non-blocking
     clientSocket = fcntl(_socket, F_SETFL, O_NONBLOCK);
     if (_socket == ERROR)
-        throw (Server::ExceptionServer(ERRNOMSG"error socket"));
+        throw (Server::ExceptionServer(ERRNOMSG"error: socket"));
+
+    clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof (opt_len));
+    if (clientSocket = ERROR)
+        throw (Server::ExceptionServer(ERRNOMSG"error: setsockopt"));
     
     memset(&_addr, 0, sizeof _addr);
     _addr.sin_family = AF_UNSPEC;		// don't care IPv4 or IPv6, AF = Address Family

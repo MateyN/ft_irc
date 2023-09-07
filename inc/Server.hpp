@@ -35,6 +35,8 @@ class Server
         Server& operator=(const Server &rhs);
         ~Server();
 
+        Client  *client;
+
         class ExceptionServer : public std::exception
         {
 			public:

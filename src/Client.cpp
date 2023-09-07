@@ -4,10 +4,11 @@ Client::Client():   _fd(0)
 {
     _username = "";
     _nick = "";
-    setNick = false;
+    _setNick = false;
+    _isRegister = false;
 }
 
-Client::Client(int fd): setNick(false), _fd(fd)
+Client::Client(int fd): _setNick(false), _fd(fd)
 {
 
 }
@@ -19,12 +20,13 @@ Client::Client(const Client& src)
 
 Client& Client::operator=(const Client& rhs)
 {
-    setNick = rhs.setNick;
+    _setNick = rhs._setNick;
     _fd = rhs._fd;
     _nick = rhs._nick;
     _username = rhs._username;
+    _isRegister = rhs._isRegister;
 
-    return (*this);
+    return *this;
 }
 
 Client::~Client(void)
@@ -33,6 +35,7 @@ Client::~Client(void)
 	//return;
 }
 
+// Getters
 int		Client::getFD() const
 {
 	return (_fd);
@@ -43,6 +46,12 @@ std::string	Client::getNickname()
 	return _nick;
 }
 
+std::string	Client::getUser()
+{
+	return _username;
+}
+
+// Setters
 void	Client::setNickname(std::string nick)
 {
 	_nick = nick;
@@ -53,7 +62,12 @@ void		Client::setUser(std::string user)
 	_username = user;
 }
 
-std::string	Client::getUser()
+bool    Client::isRegister()
 {
-	return _username;
+    return _isRegister;
+}
+
+void    Client::setIsRegister(bool registered)
+{
+    _isRegister = registered;
 }
