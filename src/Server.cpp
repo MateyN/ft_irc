@@ -68,7 +68,7 @@ bool    Server::setupServerSocket()
     if (_socket == ERROR)
         throw (Server::ExceptionServer(ERRNOMSG"error: socket"));
 
-    clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof (opt_len));
+    clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof (opt_len) + 1);
     if (clientSocket = ERROR)
         throw (Server::ExceptionServer(ERRNOMSG"error: setsockopt"));
     
@@ -79,7 +79,11 @@ bool    Server::setupServerSocket()
 
     clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
     if (clientSocket == ERROR)
-        throw (Server::ExceptionServer(ERRNOMSG"fail binding"));
+        throw (Server::ExceptionServer(ERRNOMSG"error: fail bind"));
+
+    clientSocket = listen(_socket, MAX_CLIENTS);
+    if (clientSocket == ERROR)
+        throw (Server::ExceptionServer(ERRNOMSG"error: fail listen"));
     // ERROR CHECKS
 
     return (true);

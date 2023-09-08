@@ -71,3 +71,8 @@ void    Client::setIsRegister(bool registered)
 {
     _isRegister = registered;
 }
+
+bool    Client::isConnect()
+{
+    return _connect;
+}

@@ -5,7 +5,7 @@
 # define	PORT_MAX 65535
 # define    ERRNOMSG "Error: "
 # define    ERROR -1
-//# define	MAX_CLIENTS 10		// backlog
+# define	MAX_CLIENTS 10		// backlog
 
 #include "Client.hpp"
 #include <iostream>

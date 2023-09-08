@@ -30,18 +30,19 @@ class Client
         void        setNickname(std::string nickname);
         void        setIsRegister(bool registered);
         void        setUser(std::string user);
+        bool        isConnect();
         
         std::string getUser();
         std::string getNickname();
 
     private:
-        int _fd;
+        int         _fd;
         
         std::string _nick;
         std::string _username;
 
         bool        _isRegister;
-
+        bool        _connect;
 };
 
 #endif
