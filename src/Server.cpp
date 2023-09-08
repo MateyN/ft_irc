@@ -84,7 +84,47 @@ bool    Server::setupServerSocket()
     clientSocket = listen(_socket, MAX_CLIENTS);
     if (clientSocket == ERROR)
         throw (Server::ExceptionServer(ERRNOMSG"error: fail listen"));
-    // ERROR CHECKS
 
-    return (true);
+        return (true);
+}
+
+bool    Server::serverConnect()
+{
+    int nfds; // fd to be monitored
+    int socket_i; // store the client socket
+    int poll_i; // store result of poll
+    pollfd  pfds[5];
+    char    buff[500];
+    socklen_t   addrlen;
+
+    pfds[0].fd = _socket;
+    pfds[0].events = POLLIN;
+
+    while(true)
+    {
+        // waiting for events
+        poll_i = poll(pfds, nfds, -1); // -1 listen for incoming data or client connections without timeout
+        if (poll_i == ERROR)
+            throw (Server::ExceptionServer(ERRNOMSG"error: poll()"));
+        for (int i = 0; i < nfds; i++)
+        {
+            if (pfds[i].revents && POLLIN) // ready to read?
+            {
+               if (pfds[i].fd == _socket) // check if the event is in the server socket
+               {
+                    addrlen = sizeof(_addr);
+                    socket_i = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
+                    if (socket_i != ERROR)
+                    {
+                        // adding the new client socket for monitoring.
+                        pfds[nfds].fd = socket_i;
+                        pfds[nfds].events = POLLIN;
+                        nfds++;
+                    }
+                    else
+                        throw (Server::ExceptionServer(ERRNOMSG"error: accept()"));
+               }
+            }
+        }
+    }
 }

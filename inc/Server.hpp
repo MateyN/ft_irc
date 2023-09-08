@@ -55,8 +55,9 @@ class Server
         bool        setNick;
         bool        validPass;
 
+        bool        serverConnect();
         bool        setupServerSocket();
-        void        Sockets();
+        //void        Sockets(); // maybe won't need that
 
         int         getSocket();
         int         getPort();
