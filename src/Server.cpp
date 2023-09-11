@@ -8,10 +8,10 @@ Server::Server():   validPass(false), _socket(0), _port(0)
 // Copy assignment operator
 Server& Server::operator=(Server const & rhs)
 {
-    token = rhs.token;
-    cmd = rhs.cmd;
     setNick = rhs.setNick;
     validPass = rhs.validPass;
+    token = rhs.token;
+    cmd = rhs.cmd;
     _port = rhs._port;
     _socket = rhs._socket;
     password = rhs.password;
@@ -23,6 +23,11 @@ Server& Server::operator=(Server const & rhs)
 // Default Destructor 
 Server::~Server(void)
 {
+    if (client != NULL)
+    {
+        delete client;
+        client = NULL;
+    }
 	//std::cout << "Destructor Server Called" << std::endl;
 	//return;
 }
@@ -88,43 +93,69 @@ bool    Server::setupServerSocket()
         return (true);
 }
 
+void    Server::initServSocket()
+{
+    pollfd  pfds;
+    bzero(&pfds, sizeof(pfds));
+    pfds.fd = _socket;
+    pfds.events = POLLIN;
+    _pfds.push_back(pfds);
+}
+
 bool    Server::serverConnect()
 {
-    int nfds; // fd to be monitored
-    int socket_i; // store the client socket
-    int poll_i; // store result of poll
-    pollfd  pfds[5];
-    char    buff[500];
-    socklen_t   addrlen;
-
-    pfds[0].fd = _socket;
-    pfds[0].events = POLLIN;
+    initServSocket();
+    //int nfds;
 
     while(true)
     {
         // waiting for events
-        poll_i = poll(pfds, nfds, -1); // -1 listen for incoming data or client connections without timeout
-        if (poll_i == ERROR)
+       int poll_i = poll(_pfds.data(), _pfds.size(), -1); // -1 listen for incoming data or client connections without timeout
+       if (poll_i == ERROR)
             throw (Server::ExceptionServer(ERRNOMSG"error: poll()"));
-        for (int i = 0; i < nfds; i++)
+        if (poll_i > 0)
         {
-            if (pfds[i].revents && POLLIN) // ready to read?
+            for (size_t i = 0; i < _pfds.size(); i++)
             {
-               if (pfds[i].fd == _socket) // check if the event is in the server socket
-               {
-                    addrlen = sizeof(_addr);
-                    socket_i = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
-                    if (socket_i != ERROR)
+                if (_pfds[i].revents & POLLIN)
+                {
+                    if (_pfds[i].fd == _socket)
                     {
-                        // adding the new client socket for monitoring.
-                        pfds[nfds].fd = socket_i;
-                        pfds[nfds].events = POLLIN;
-                        nfds++;
+                        handleNewCliConnect();
                     }
                     else
-                        throw (Server::ExceptionServer(ERRNOMSG"error: accept()"));
-               }
+                    {
+                        //handleCliData(); //TBD
+                    }
+                }
             }
         }
     }
+}
+
+void    Server::handleNewCliConnect()
+{
+    socklen_t   addrlen = sizeof(_addr);
+    int         socket_i = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
+
+    if (socket_i != ERROR)
+    {
+        pollfd  pfdc;
+        bzero(&pfdc, sizeof(pfdc));
+        pfdc.fd = socket_i;
+        pfdc.events = POLLIN;
+        _pfds.push_back(pfdc);
+
+        client = addClient(socket_i);
+        std::cout << "New client connected" << std::endl;
+    }
+    else
+        throw (Server::ExceptionServer(ERRNOMSG"error: addClient()"));
+}
+
+
+Client *Server::addClient(int fd)
+{
+    Client  *client = new Client(fd);
+    return client;
 }

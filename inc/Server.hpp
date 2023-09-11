@@ -62,15 +62,20 @@ class Server
         int         getSocket();
         int         getPort();
         void        setPort(int port);
+        void        initServSocket();
+        void        handleNewCliConnect();
 
         std::string getPass();
         void        setPass(std::string pass);
+
+        Client      *addClient(int fd);
 
     private:
         int                     _socket;
         int                     _port;
         std::string             password;
         struct sockaddr_in		_addr;
+        std::vector<pollfd>		_pfds;
 
 };
 
