@@ -20,6 +20,11 @@ Server& Server::operator=(Server const & rhs)
     return *this;
 }
 
+Server::Server(const Server& src)
+{
+    *this = src;
+}
+
 // Default Destructor 
 Server::~Server(void)
 {
@@ -96,7 +101,7 @@ bool    Server::setupServerSocket()
 void    Server::initServSocket()
 {
     pollfd  pfds;
-    bzero(&pfds, sizeof(pfds));
+    memset(&pfds, 0, sizeof(pfds));
     pfds.fd = _socket;
     pfds.events = POLLIN;
     _pfds.push_back(pfds);
@@ -106,7 +111,6 @@ bool    Server::serverConnect()
 {
     initServSocket();
     //int nfds;
-
     while(true)
     {
         // waiting for events
@@ -121,11 +125,11 @@ bool    Server::serverConnect()
                 {
                     if (_pfds[i].fd == _socket)
                     {
-                        handleNewCliConnect();
+                        newClientConnect();
                     }
                     else
                     {
-                        //handleCliData(); //TBD
+                        clientData(_pfds[i]);
                     }
                 }
             }
@@ -133,15 +137,47 @@ bool    Server::serverConnect()
     }
 }
 
-void    Server::handleNewCliConnect()
+void    Server::clientData(pollfd &pfdc)
+{
+    char    buf[500];
+    int     storedBytes = recv(pfdc.fd, buf, sizeof(buf), 0);
+
+    if (storedBytes <= 0)
+    {
+       //exit?
+    }
+    else
+    {
+        processRecvData(pfdc.fd, buf, storedBytes);
+    }
+}
+
+void    Server::processRecvData(int send, char *data, int size)
+{
+    std::string recvData(data, size);
+    // add the received data to the message buffer for the sender
+    msgBuffer[send] += recvData;
+    // checks if the received data contains a complete message
+    size_t  findEnd = msgBuffer[send].find("\r\n");
+    while (findEnd != std::string::npos)
+    {
+        std::string completeMsg = msgBuffer[send].substr(0, findEnd);
+        // removing the processed message from the buffer
+        msgBuffer[send].erase(0, findEnd + sizeof("\r\n"));
+        // finding the next complete message in the buffer
+        findEnd = msgBuffer[send].find("\r\n");
+    }
+}
+
+void    Server::newClientConnect()
 {
     socklen_t   addrlen = sizeof(_addr);
-    int         socket_i = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
+    int         socket_i = accept(_socket, (struct sockaddr *)&_addr, &addrlen); // store the client socket
 
     if (socket_i != ERROR)
     {
         pollfd  pfdc;
-        bzero(&pfdc, sizeof(pfdc));
+        memset(&pfdc, 0, sizeof(pfdc));
         pfdc.fd = socket_i;
         pfdc.events = POLLIN;
         _pfds.push_back(pfdc);
@@ -150,7 +186,7 @@ void    Server::handleNewCliConnect()
         std::cout << "New client connected" << std::endl;
     }
     else
-        throw (Server::ExceptionServer(ERRNOMSG"error: addClient()"));
+        throw (Server::ExceptionServer(ERRNOMSG"error: accept()"));
 }
 
 

@@ -1,6 +1,6 @@
 #include "../inc/Client.hpp"
 
-Client::Client():   _fd(0)
+Client::Client():   _fd(0), _connect(false)
 {
     _username = "";
     _nick = "";
@@ -8,7 +8,7 @@ Client::Client():   _fd(0)
     _isRegister = false;
 }
 
-Client::Client(int fd): _setNick(false), _fd(fd)
+Client::Client(int fd): _setNick(false), _fd(fd), _connect(false)
 {
 
 }
@@ -22,6 +22,7 @@ Client& Client::operator=(const Client& rhs)
 {
     _setNick = rhs._setNick;
     _fd = rhs._fd;
+    _connect = rhs._connect;
     _nick = rhs._nick;
     _username = rhs._username;
     _isRegister = rhs._isRegister;

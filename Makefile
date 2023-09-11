@@ -3,7 +3,8 @@ NAME			=	ircserv
 SRC_DIR			=	src/
 SRCS			=	main.cpp			\
 					Server.cpp			\
-					Client.cpp
+					Client.cpp			\
+					Channel.cpp
 
 OBJ_DIR			= 	obj/
 OBJS			=	$(addprefix $(OBJ_DIR), $(SRCS:.cpp=.opp))

@@ -8,6 +8,7 @@
 # define	MAX_CLIENTS 10		// backlog
 
 #include "Client.hpp"
+#include "Channel.hpp"
 #include <iostream>
 #include <string>
 #include <stdexcept>
@@ -36,6 +37,7 @@ class Server
         ~Server();
 
         Client  *client;
+        Channel *channel;
 
         class ExceptionServer : public std::exception
         {
@@ -50,8 +52,6 @@ class Server
 				const char* _msg;
 		};
 
-        std::string token;
-        std::string cmd;
         bool        setNick;
         bool        validPass;
 
@@ -62,20 +62,26 @@ class Server
         int         getSocket();
         int         getPort();
         void        setPort(int port);
+        
         void        initServSocket();
-        void        handleNewCliConnect();
+        void        newClientConnect();
+        void        clientData(pollfd &pfdc);
+        void        processRecvData(int send, char *data, int size);
 
+        std::string token;
+        std::string cmd;
         std::string getPass();
         void        setPass(std::string pass);
 
         Client      *addClient(int fd);
 
     private:
-        int                     _socket;
-        int                     _port;
-        std::string             password;
-        struct sockaddr_in		_addr;
-        std::vector<pollfd>		_pfds;
+        int                         _socket;
+        int                         _port;
+        std::string                 password;
+        struct sockaddr_in		    _addr;
+        std::vector<pollfd>		    _pfds;
+        std::map<int, std::string>  msgBuffer;
 
 };
 

@@ -26,14 +26,14 @@ class Client
         bool        isRegister();
 
         int         getFD()const;
+        std::string getUser();
+        std::string getNickname();
 
         void        setNickname(std::string nickname);
         void        setIsRegister(bool registered);
         void        setUser(std::string user);
-        bool        isConnect();
         
-        std::string getUser();
-        std::string getNickname();
+        bool        isConnect();
 
     private:
         int         _fd;
