@@ -1,7 +1,10 @@
 #ifndef CHANNEL_HPP
 # define CHANNEL_HPP
 
+#include "Client.hpp"
 #include "Server.hpp"
+#include <string>
+#include <iostream>
 
 class   Channel
 {
@@ -12,9 +15,13 @@ class   Channel
         Channel& operator=(const Channel &rhs);
         ~Channel();
 
+        // getters
         std::string getChanName();
         std::string getPassword();
         std::string getTopic();
+
+        // setters
+        void        setTopic(std::string topic);
 
     private:
         std::string _chanName;

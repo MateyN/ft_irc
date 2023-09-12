@@ -1,4 +1,6 @@
 #include "../inc/Client.hpp"
+#include "../inc/Server.hpp"
+#include "../inc/Channel.hpp"
 
 Client::Client():   _fd(0), _connect(false)
 {

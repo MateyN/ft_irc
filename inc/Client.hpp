@@ -1,7 +1,8 @@
 #ifndef CLIENT_HPP
 # define CLIENT_HPP
 
-#include "Server.hpp"
+//#include "Server.hpp"
+//#include "Channel.hpp"
 # include <iostream>
 # include <sys/socket.h>
 # include <netinet/in.h>
@@ -32,7 +33,7 @@ class Client
         void        setNickname(std::string nickname);
         void        setIsRegister(bool registered);
         void        setUser(std::string user);
-        
+
         bool        isConnect();
 
     private:

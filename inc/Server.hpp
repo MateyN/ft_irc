@@ -36,8 +36,8 @@ class Server
         Server& operator=(const Server &rhs);
         ~Server();
 
-        Client  *client;
-        Channel *channel;
+        Client*     client;
+        Channel*    channel;
 
         class ExceptionServer : public std::exception
         {
@@ -73,7 +73,7 @@ class Server
         std::string getPass();
         void        setPass(std::string pass);
 
-        Client      *addClient(int fd);
+        Client*     addClient(int fd);
 
     private:
         int                         _socket;

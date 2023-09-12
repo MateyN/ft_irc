@@ -1,4 +1,6 @@
+#include "../inc/Client.hpp"
 #include "../inc/Server.hpp"
+#include "../inc/Channel.hpp"
 
 Server::Server():   validPass(false), _socket(0), _port(0)
 {
@@ -79,7 +81,7 @@ bool    Server::setupServerSocket()
         throw (Server::ExceptionServer(ERRNOMSG"error: socket"));
 
     clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof (opt_len) + 1);
-    if (clientSocket = ERROR)
+    if (clientSocket == ERROR)
         throw (Server::ExceptionServer(ERRNOMSG"error: setsockopt"));
     
     memset(&_addr, 0, sizeof _addr);

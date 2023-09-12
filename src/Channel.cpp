@@ -1,5 +1,5 @@
-//#include "../inc/Client.hpp"
-//#include "../inc/Server.hpp"
+#include "../inc/Client.hpp"
+#include "../inc/Server.hpp"
 #include "../inc/Channel.hpp"
 
 Channel::Channel()
@@ -45,4 +45,9 @@ std::string Channel::getTopic()
 std::string Channel::getPassword()
 {
     return _password;
+}
+
+void    Channel::setTopic(std::string topic)
+{
+    _topic = topic;
 }
