@@ -1,8 +1,8 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# define	PORT_MIN 1024
-# define	PORT_MAX 65535
+//# define	PORT_MIN 1024
+//# define	PORT_MAX 65535
 # define    ERRNOMSG "Error: "
 # define    ERROR -1
 # define	MAX_CLIENTS 10		// backlog
@@ -67,6 +67,8 @@ class Server
         void        newClientConnect();
         void        clientData(pollfd &pfdc);
         void        processRecvData(int send, char *data, int size);
+        void        clientDisc(int pfdc);
+        void        clientsErase(Client *client);
 
         std::string token;
         std::string cmd;
@@ -81,6 +83,8 @@ class Server
         std::string                 password;
         struct sockaddr_in		    _addr;
         std::vector<pollfd>		    _pfds;
+        std::vector<Client *>	    _cli;
+        std::vector<Channel *>      _chan;
         std::map<int, std::string>  msgBuffer;
 
 };

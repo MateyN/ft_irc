@@ -19,14 +19,26 @@ class   Channel
         std::string getChanName();
         std::string getPassword();
         std::string getTopic();
+        std::vector <Client *>  getUsr();
 
         // setters
         void        setTopic(std::string topic);
+
+        void        addOp(Client *client);
+        void        eraseOp(Client *client, int fd);
+        void        addUser(Client *client);
+        void        eraseUser(Client *client, int fd);
+
+        bool        Op(Client *client);
+        bool        User(Client *client);
 
     private:
         std::string _chanName;
         std::string _topic;
         std::string _password;
+
+        std::vector<Client *>   _usr;
+        std::vector<Client *>   _op;
 };
 
 #endif

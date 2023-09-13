@@ -116,10 +116,10 @@ bool    Server::serverConnect()
     while(true)
     {
         // waiting for events
-       int poll_i = poll(_pfds.data(), _pfds.size(), -1); // -1 listen for incoming data or client connections without timeout
-       if (poll_i == ERROR)
+       int pollResult = poll(_pfds.data(), _pfds.size(), -1); // -1 listen for incoming data or client connections without timeout
+       if (pollResult == ERROR)
             throw (Server::ExceptionServer(ERRNOMSG"error: poll()"));
-        if (poll_i > 0)
+        if (pollResult > 0)
         {
             for (size_t i = 0; i < _pfds.size(); i++)
             {
@@ -146,12 +146,49 @@ void    Server::clientData(pollfd &pfdc)
 
     if (storedBytes <= 0)
     {
-       //exit?
+       clientDisc(pfdc.fd);
     }
     else
     {
         processRecvData(pfdc.fd, buf, storedBytes);
     }
+}
+
+void    Server::clientDisc(int pfdc)
+{
+    for (size_t i = 0; i < _pfds.size(); i++)
+    {
+        if (_pfds[i].fd == pfdc)
+        {
+            for (std::vector<Client *>:: iterator cli = _cli.begin(); cli != _cli.end(); cli++)
+            {
+                if ((*cli)->getFD() == pfdc)
+                {
+                clientsErase(*cli);
+                break;
+                }
+            }
+            _pfds.erase(_pfds.begin() + i);
+            break ;
+        }
+    }
+}
+
+void    Server::clientsErase(Client *client)
+{
+    for (std::vector<Channel *>::iterator itc = _chan.begin(); itc != _chan.end(); itc++)
+    {
+        if ((*itc)->User(client))
+        {
+            (*itc)->eraseUser(client, client->getFD());
+        }
+        if ((*itc)->Op(client))
+        {
+            (*itc)->eraseOp(client, client->getFD());
+        }
+    }
+    delete client;
+    _cli.erase(std::remove(_cli.begin(), _cli.end(), client), _cli.end());
 }
 
 void    Server::processRecvData(int send, char *data, int size)
