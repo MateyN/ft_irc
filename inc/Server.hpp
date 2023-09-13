@@ -69,6 +69,7 @@ class Server
         void        processRecvData(int send, char *data, int size);
         void        clientDisc(int pfdc);
         void        clientsErase(Client *client);
+        void        chanErase(Channel *chan);
 
         std::string token;
         std::string cmd;
@@ -76,6 +77,7 @@ class Server
         void        setPass(std::string pass);
 
         Client*     addClient(int fd);
+        Channel*    addChan(std::string name);
 
     private:
         int                         _socket;

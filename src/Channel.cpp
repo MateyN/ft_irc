@@ -67,6 +67,7 @@ void    Channel::addUser(Client *client)
 
 void    Channel::eraseUser(Client *client, int fd)
 {
+    (void) client;
     for (std::vector<Client *>::iterator usr = _usr.begin(); usr != _usr.end(); usr++)
     {
         if ((*usr)->getFD() == fd)

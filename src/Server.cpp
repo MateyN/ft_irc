@@ -147,13 +147,14 @@ void    Server::newClientConnect()
 
     if (cliSocket != ERROR)
     {
+        // init a new pollfd struct to monitor the client's socket
         pollfd  pfdc;
         memset(&pfdc, 0, sizeof(pfdc));
         pfdc.fd = cliSocket;
         pfdc.events = POLLIN;
-        _pfds.push_back(pfdc);
+        _pfds.push_back(pfdc); // add the pollfd struct for event monitoring
 
-        client = addClient(cliSocket);
+        client = addClient(cliSocket); // create and init a new client obj
         std::cout << "New client connected" << std::endl;
     }
     else
@@ -237,4 +238,22 @@ Client *Server::addClient(int fd)
 {
     Client  *client = new Client(fd);
     return client;
+}
+
+Channel *Server::addChan(std::string name)
+{
+    Channel *chan = new Channel(name);
+    return chan;
+}
+
+void    Server::chanErase(Channel *chan)
+{
+    for (std::vector<Channel *>::iterator iter = _chan.begin(); iter != _chan.end(); iter++)
+    {
+        if (chan->getChanName() == (*iter)->getChanName())
+        {
+            _chan.erase(iter);
+            break;
+        }
+    }
 }

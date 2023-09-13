@@ -15,7 +15,7 @@ int main(int ac, char *av[])
 		server.setPort(atoi(av[1]));
 		server.setupServerSocket();
 		server.setPass(av[2]);
-
+		server.serverConnect();
 		// need connection
 		return 0;
 	}
