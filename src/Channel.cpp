@@ -95,6 +95,7 @@ void    Channel::addOp(Client *client)
 
 void    Channel::eraseOp(Client *client, int fd)
 {
+    (void) client; // unused for now
     for (std::vector<Client *>::iterator op = _op.begin(); op != _op.end(); op++)
     {
         if ((*op)->getFD() == fd)
@@ -107,6 +108,7 @@ void    Channel::eraseOp(Client *client, int fd)
 
 bool    Channel::Op(Client *client)
 {
+    (void) client; // unused for now
     for (std::vector<Client *>::iterator op = _op.begin(); op != _op.end(); op++)
     {
         if ((*op)->getFD() == client->getFD())
