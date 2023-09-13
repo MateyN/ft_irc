@@ -109,6 +109,7 @@ void    Server::initServSocket()
     _pfds.push_back(pfds);
 }
 
+// handling client connections and data reception.
 bool    Server::serverConnect()
 {
     initServSocket();
@@ -119,11 +120,11 @@ bool    Server::serverConnect()
        int pollResult = poll(_pfds.data(), _pfds.size(), -1); // -1 listen for incoming data or client connections without timeout
        if (pollResult == ERROR)
             throw (Server::ExceptionServer(ERRNOMSG"error: poll()"));
-        if (pollResult > 0)
+        if (pollResult > 0) // if there are events to process
         {
             for (size_t i = 0; i < _pfds.size(); i++)
             {
-                if (_pfds[i].revents & POLLIN)
+                if (_pfds[i].revents & POLLIN) // checks if the event data is ready to be read
                 {
                     if (_pfds[i].fd == _socket)
                     {
@@ -139,56 +140,40 @@ bool    Server::serverConnect()
     }
 }
 
+void    Server::newClientConnect()
+{
+    socklen_t   addrlen = sizeof(_addr);
+    int         cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen); // store the client socket
+
+    if (cliSocket != ERROR)
+    {
+        pollfd  pfdc;
+        memset(&pfdc, 0, sizeof(pfdc));
+        pfdc.fd = cliSocket;
+        pfdc.events = POLLIN;
+        _pfds.push_back(pfdc);
+
+        client = addClient(cliSocket);
+        std::cout << "New client connected" << std::endl;
+    }
+    else
+        throw (Server::ExceptionServer(ERRNOMSG"error: accept()"));
+}
+
+// handling data received from a client
 void    Server::clientData(pollfd &pfdc)
 {
     char    buf[500];
-    int     storedBytes = recv(pfdc.fd, buf, sizeof(buf), 0);
+    int     storedBytes = recv(pfdc.fd, buf, sizeof(buf), 0); // receive and store data
 
-    if (storedBytes <= 0)
+    if (storedBytes <= 0) // if no data received or connected client
     {
        clientDisc(pfdc.fd);
     }
     else
     {
-        processRecvData(pfdc.fd, buf, storedBytes);
+        processRecvData(pfdc.fd, buf, storedBytes); // process what is received
     }
-}
-
-void    Server::clientDisc(int pfdc)
-{
-    for (size_t i = 0; i < _pfds.size(); i++)
-    {
-        if (_pfds[i].fd == pfdc)
-        {
-            for (std::vector<Client *>:: iterator cli = _cli.begin(); cli != _cli.end(); cli++)
-            {
-                if ((*cli)->getFD() == pfdc)
-                {
-                clientsErase(*cli);
-                break;
-                }
-            }
-            _pfds.erase(_pfds.begin() + i);
-            break ;
-        }
-    }
-}
-
-void    Server::clientsErase(Client *client)
-{
-    for (std::vector<Channel *>::iterator itc = _chan.begin(); itc != _chan.end(); itc++)
-    {
-        if ((*itc)->User(client))
-        {
-            (*itc)->eraseUser(client, client->getFD());
-        }
-        if ((*itc)->Op(client))
-        {
-            (*itc)->eraseOp(client, client->getFD());
-        }
-    }
-    delete client;
-    _cli.erase(std::remove(_cli.begin(), _cli.end(), client), _cli.end());
 }
 
 void    Server::processRecvData(int send, char *data, int size)
@@ -208,24 +193,43 @@ void    Server::processRecvData(int send, char *data, int size)
     }
 }
 
-void    Server::newClientConnect()
+// handling the client disconnection
+void    Server::clientDisc(int pfdc)
 {
-    socklen_t   addrlen = sizeof(_addr);
-    int         socket_i = accept(_socket, (struct sockaddr *)&_addr, &addrlen); // store the client socket
-
-    if (socket_i != ERROR)
+    for (size_t i = 0; i < _pfds.size(); i++)
     {
-        pollfd  pfdc;
-        memset(&pfdc, 0, sizeof(pfdc));
-        pfdc.fd = socket_i;
-        pfdc.events = POLLIN;
-        _pfds.push_back(pfdc);
-
-        client = addClient(socket_i);
-        std::cout << "New client connected" << std::endl;
+        if (_pfds[i].fd == pfdc) // checks for matching poll struct for the disc client
+        {
+            for (std::vector<Client *>:: iterator cli = _cli.begin(); cli != _cli.end(); cli++)
+            {
+                if ((*cli)->getFD() == pfdc)
+                {
+                    clientsErase(*cli); // cleanup disc clients
+                    break;
+                }
+            }
+            _pfds.erase(_pfds.begin() + i); // removing pollfd struct with the disc. client
+            break ;
+        }
     }
-    else
-        throw (Server::ExceptionServer(ERRNOMSG"error: accept()"));
+}
+
+// cleaning up 
+void    Server::clientsErase(Client *client)
+{
+    for (std::vector<Channel *>::iterator iter = _chan.begin(); iter != _chan.end(); iter++)
+    {
+        if ((*iter)->User(client)) // checks if its a user
+        {
+            (*iter)->eraseUser(client, client->getFD());
+        }
+        if ((*iter)->Op(client)) // checks if its an operator in the channnel or not
+        {
+            (*iter)->eraseOp(client, client->getFD());
+        }
+    }
+    delete client;
+    _cli.erase(std::remove(_cli.begin(), _cli.end(), client), _cli.end()); // remove the client pointer from the list
 }
 
 
