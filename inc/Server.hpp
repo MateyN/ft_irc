@@ -1,8 +1,8 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-//# define	PORT_MIN 1024
-//# define	PORT_MAX 65535
+# define	PORT_MIN 1024
+# define	PORT_MAX 65535
 # define    ERRNOMSG "Error: "
 # define    ERROR -1
 # define	MAX_CLIENTS 10		// backlog
