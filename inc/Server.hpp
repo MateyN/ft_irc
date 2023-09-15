@@ -6,6 +6,8 @@
 # define    ERRNOMSG "Error: "
 # define    ERROR -1
 # define	MAX_CLIENTS 10		// backlog
+# define    TRUE 1
+# define    FALSE 0
 
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -57,6 +59,8 @@ class Server
 
         bool        serverConnect();
         bool        setupServerSocket();
+        bool        isChannel(std::string chan);
+        bool        isNick(std::string nick);
         //void        Sockets(); // maybe won't need that
 
         int         getSocket();
@@ -65,19 +69,26 @@ class Server
         
         void        initServSocket();
         void        newClientConnect();
+        void        handleNewClientConnect(Client *client);
+        void        handleMessage(int send, const std::string& msg);
+        void        clientMsg(std::string msg, Client *client, Channel *channel);
         void        clientData(pollfd &pfdc);
         void        processRecvData(int send, char *data, int size);
         void        clientDisc(int pfdc);
         void        clientsErase(Client *client);
         void        chanErase(Channel *chan);
+        void        parseCmds(std::string msg);
 
         std::string token;
         std::string cmd;
         std::string getPass();
+        std::string channelParse(std::string input, size_t start);
+
         void        setPass(std::string pass);
 
         Client*     addClient(int fd);
         Channel*    addChan(std::string name);
+        Channel*    getChan(std::string msg);
 
     private:
         int                         _socket;
