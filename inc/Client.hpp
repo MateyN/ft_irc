@@ -27,6 +27,8 @@ class Client
         bool        isRegister();
 
         int         getFD()const;
+
+        std::string getHost();
         std::string getUser();
         std::string getNickname();
 
@@ -41,6 +43,7 @@ class Client
         
         std::string _nick;
         std::string _username;
+        std::string _hostname;
 
         bool        _isRegister;
         bool        _connect;

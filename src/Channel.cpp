@@ -83,9 +83,9 @@ bool    Channel::User(Client *client)
     for (std::vector<Client *>::iterator usr = _usr.begin(); usr != _usr.end(); usr++)
     {
         if ((*usr)->getFD() == client->getFD())
-        return true;
+        return 1;
     }
-    return false;
+    return 0;
 }
 
 void    Channel::addOp(Client *client)
@@ -113,7 +113,7 @@ bool    Channel::Op(Client *client)
     for (std::vector<Client *>::iterator op = _op.begin(); op != _op.end(); op++)
     {
         if ((*op)->getFD() == client->getFD())
-        return true;
+        return 1;
     }
-    return false;
+    return 0;
 }

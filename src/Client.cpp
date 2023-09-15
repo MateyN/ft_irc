@@ -8,6 +8,7 @@ Client::Client():   _fd(0), _connect(false)
     _nick = "";
     _setNick = false;
     _isRegister = false;
+    _hostname = "";
 }
 
 Client::Client(int fd): _setNick(false), _fd(fd), _connect(false)
@@ -28,13 +29,14 @@ Client& Client::operator=(const Client& rhs)
     _nick = rhs._nick;
     _username = rhs._username;
     _isRegister = rhs._isRegister;
+    _hostname = rhs._hostname;
 
     return *this;
 }
 
 Client::~Client(void)
 {
-    //std::cout << "Destructor Client Called" << std::endl;
+    //std::cout << "Des ctor Client Called" << std::endl;
 	//return;
 }
 
@@ -78,4 +80,14 @@ void    Client::setIsRegister(bool registered)
 bool    Client::isConnect()
 {
     return _connect;
+}
+
+std::string Client::getHost()
+{
+    char    hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) == 0)
+    {
+        return std::string(hostname);
+    }
+    return "";
 }
