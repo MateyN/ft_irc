@@ -18,8 +18,8 @@
 	- [ ] reference client must have those functionalities :
 		- [ ] authentification
 		- [ ] define nickname TO TEST
-		- [ ] define username
-		- [ ] join channel
+		- [ ] define username TO TEST
+		- [ ] join channel TO TEST
 		- [ ] send private message (PM)
 		- [ ] receive PM
 		- [ ] all sent messages in a channel must be transmitted to all clients who joined this specific channel

@@ -16,10 +16,12 @@ class   Channel
         ~Channel();
 
         // getters
-        std::string getChanName();
-        std::string getPassword();
-        std::string getTopic();
-        std::vector <Client *>  getUsr();
+        std::string getChanName() { return _chanName; }
+        std::string getTopic() { return _password; }
+        std::string getMode() { return _mode; }
+        std::string getPassword() { return _password; }
+        std::vector <Client *>  getUsr() { return _usr; }
+        std::vector <Client *>  getOp() { return _op; }
 
         // setters
         void        setTopic(std::string topic);
@@ -35,7 +37,7 @@ class   Channel
         bool        User(Client *client);
 
     private:
-        std::string _chanName;
+        std::string _chanName; // must begin only by '#'
         std::string _topic;
         std::string _mode;
         std::string	_password;
@@ -43,7 +45,7 @@ class   Channel
 		std::vector<int>		_banned;
 
         std::vector<Client *>   _usr;
-        std::vector<Client *>   _op;
+        std::vector<Client *>   _op; // op is also in usr
 };
 
 #endif

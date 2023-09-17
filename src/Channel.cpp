@@ -34,27 +34,8 @@ Channel::~Channel()
 {
 
 }
-    // getters
-std::string Channel::getChanName()
-{
-    return _chanName;
-}
 
-std::string Channel::getTopic()
-{
-    return _topic;
-}
-
-std::string Channel::getPassword()
-{
-    return _password;
-}
-
-std::vector<Client *>   Channel::getUsr()
-{
-    return _usr;
-}
-    // setters
+// setters
 void    Channel::setTopic(std::string topic)
 {
     _topic = topic;

@@ -29,12 +29,18 @@ class Client
         int         getFD()const;
         std::string getUser();
         std::string getNickname();
+		std::map<std::string, Channel *>& 	getChannels() { return _channels; }
 
         void        setNickname(std::string nickname);
         void        setIsRegister(bool registered);
         void        setUser(std::string user);
 
         bool        isConnect();
+
+		void 		joinChannel(Channel *channel);
+		void 		leaveChannel(Channel &channel);
+		bool		inChannel(const std::string& channel_name);
+
 
     private:
         int         _fd;
@@ -44,6 +50,8 @@ class Client
 
         bool        _isRegister;
         bool        _connect;
+
+		std::map<std::string, Channel *>	_channels;
 };
 
 #endif

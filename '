@@ -12,10 +12,6 @@
 # define MSG(nick, user, cmd, msg) (":" + nick + "!" + user + "@" + HOST + " " + cmd + " :" + msg + "\r\n")
 # define PREFIX(num) (":" + HOST + " " + num + " ")
 
-# define 332RPL_TOPIC(nick, chanName, topic) (PREFIX("332") + nick + " " + chanName + " :" + topic + "\r\n")
-# define 353RPL_NAMREPLY(nick, chanName, users) (PREFIX("353") + nick + " = " + chanName + " :" + users + "\r\n")
-# define 366RPL_ENDOFNAMES(nick, chanName) (PREFIX("366") + nick + " " + chanName + " :End of /NAMES list" + "\r\n")
-
 # define 431ERR_NONICKNAMEGIVEN (PREFIX("431") + ":No nickname given" + "\r\n")
 # define 432ERR_ERRONEUSNICKNAME(nick) (PREFIX("432") + nick + " :Erroneous nickname" + "\r\n")
 # define 433ERR_NICKNAMEINUSE(nick) (PREFIX("433") + nick + " :Nickname is already in use" + "\r\n")
@@ -24,6 +20,7 @@
 # define 473ERR_INVITEONLYCHAN(chan) (PREFIX("473") + chan + " :Cannot join channel (+i)")
 # define 474ERR_BANNEDFROMCHAN(chan) (PREFIX("474") + chan + " :Cannot join channel (+b)")
 # define 475ERR_BADCHANNELKEY(chan) (PREFIX("475") + chan + " :Cannot join channel (+k)")
+# define RPL_TOPIC(nick, chanName, topic) (PREFIX("332") + nick + " " + chanName + " :" + topic + "\r\n")
 
 #include "Client.hpp"
 #include "Channel.hpp"
