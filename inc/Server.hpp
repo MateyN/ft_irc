@@ -8,22 +8,26 @@
 # define	MAX_CLIENTS 10		// backlog
 
 //num replies
+# define CRLF "\r\n"
 # define HOST "localhost"
-# define MSG(nick, user, cmd, msg) (":" + nick + "!" + user + "@" + HOST + " " + cmd + " :" + msg + "\r\n")
 # define PREFIX(num) (":" + HOST + " " + num + " ")
 
-# define 332RPL_TOPIC(nick, chanName, topic) (PREFIX("332") + nick + " " + chanName + " :" + topic + "\r\n")
-# define 353RPL_NAMREPLY(nick, chanName, users) (PREFIX("353") + nick + " = " + chanName + " :" + users + "\r\n")
-# define 366RPL_ENDOFNAMES(nick, chanName) (PREFIX("366") + nick + " " + chanName + " :End of /NAMES list" + "\r\n")
+# define MSG(nick, user, cmd, msg) (":" + nick + "!" + user + "@" + HOST + " " + cmd + " :" + msg + CRLF)
 
-# define 431ERR_NONICKNAMEGIVEN (PREFIX("431") + ":No nickname given" + "\r\n")
-# define 432ERR_ERRONEUSNICKNAME(nick) (PREFIX("432") + nick + " :Erroneous nickname" + "\r\n")
-# define 433ERR_NICKNAMEINUSE(nick) (PREFIX("433") + nick + " :Nickname is already in use" + "\r\n")
-# define 461ERR_NEEDMOREPARAMS(command) (PREFIX("461") + command + ":Not enough parameters")
-# define 462ERR_ALREADYREGISTERED (PREFIX("462") + ":Unauthorized command (already registered)")
-# define 473ERR_INVITEONLYCHAN(chan) (PREFIX("473") + chan + " :Cannot join channel (+i)")
-# define 474ERR_BANNEDFROMCHAN(chan) (PREFIX("474") + chan + " :Cannot join channel (+b)")
-# define 475ERR_BADCHANNELKEY(chan) (PREFIX("475") + chan + " :Cannot join channel (+k)")
+# define 332RPL_TOPIC(nick, chanName, topic) (PREFIX("332") + nick + " " + chanName + " :" + topic + CRLF)
+# define 353RPL_NAMREPLY(nick, chanName, users) (PREFIX("353") + nick + " = " + chanName + " :" + users + CRLF)
+# define 366RPL_ENDOFNAMES(nick, chanName) (PREFIX("366") + nick + " " + chanName + " :End of /NAMES list" + CRLF)
+
+# define 403ERR_NOSUCHCHANNEL(chan) (PREFIX("403") + chan + " :No such channel" + CRLF)
+# define 431ERR_NONICKNAMEGIVEN (PREFIX("431") + ":No nickname given" + CRLF)
+# define 432ERR_ERRONEUSNICKNAME(nick) (PREFIX("432") + nick + " :Erroneous nickname" + CRLF)
+# define 433ERR_NICKNAMEINUSE(nick) (PREFIX("433") + nick + " :Nickname is already in use" + CRLF)
+# define 442ERR_NOTONCHANNEL(chan) (PREFIX("442") + chan + " :You're not on that channel" + CRLF)
+# define 461ERR_NEEDMOREPARAMS(command) (PREFIX("461") + command + ":Not enough parameters" + CRLF)
+# define 462ERR_ALREADYREGISTERED (PREFIX("462") + ":Unauthorized command (already registered)" + CRLF)
+# define 473ERR_INVITEONLYCHAN(chan) (PREFIX("473") + chan + " :Cannot join channel (+i)" + CRLF)
+# define 474ERR_BANNEDFROMCHAN(chan) (PREFIX("474") + chan + " :Cannot join channel (+b)" + CRLF)
+# define 475ERR_BADCHANNELKEY(chan) (PREFIX("475") + chan + " :Cannot join channel (+k)" + CRLF)
 
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -70,16 +74,17 @@ class Server
 				const char* _msg;
 		};
 
-        bool        setNick;
-        bool        validPass;
+        int         getSocket();
+        int         getPort();
+		std::vector<Channel *>	getChan() { return _chan; }
 
+        bool        setNick;
+        void        setPort(int port);
+
+        bool        validPass;
         bool        serverConnect();
         bool        setupServerSocket();
         //void        Sockets(); // maybe won't need that
-
-        int         getSocket();
-        int         getPort();
-        void        setPort(int port);
         
         void        initServSocket();
         void        newClientConnect();

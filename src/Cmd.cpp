@@ -45,8 +45,8 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 	{
 		case 1: cmdNick(client, params[0]); break;
 		case 2: cmdUser(client, params[0]); break;
-		case 3: cmdJoin(*this, client, params); break;
-		case 4: cmdJPart(client, params[0]); break;
+		case 3: cmdJoin(Client &client, std::string chanName, Server &serv, std::string pwd); break;
+		case 4: cmdPart(Client &client, std::string chanName); break;
 		case 5: cmdMsg(client, "PRIVMSG", params); break;
 		case 6: cmdMsg(client, "NOTICE", params); break;
 		case 7: cmdMotd(client.get_fd(), client.get_nick()); break;
@@ -72,12 +72,12 @@ bool	Server::findNickname(std::string &nick)
 	return (true);
 }
 
-bool	Server::findUser(std::string &user)
+bool	Server::findUserClient(std::string &user)
 {
 	std::vector<Client *>::iterator it;
 	for (it = _cli.begin(); it != _cli.end(); it++)
 	{
-		if (!nick.empty() && user == ((*it))->get_user())
+		if (!user.empty() && user == ((*it))->get_user())
 			return (false);
 	}
 	return (true);
@@ -85,13 +85,25 @@ bool	Server::findUser(std::string &user)
 
 std::vector<Channel *>::iterator	Server::findChannel(std::string &chan)
 {
+	std::vector<Channel *> channels = getChan();
 	std::vector<Channel *>::iterator it;
-	for (it = _chan.begin(); it != _chan.end(); it++)
+	for (it = channels.begin(); it != channels.end(); it++)
 	{
 		if (!chan.empty() && chan == ((*it))->getChanName())
 			return (it);
 	}
 	return (_chan.end());
+}
+
+std::vector<Client *>::iterator	Server::findClientChannel(std::string &nick, Channel &channel)
+{
+	std::vector<Client *>	usrList = channel.getUsr();
+	for (std::vector<Client *>::iterator it = usrList.begin(); it != usrList.end(); it++)
+	{
+		if (!nick.empty() && nick == ((*it))->getNickname())
+			return (it);
+	}
+	return (usrList.end());
 }
 
 bool	Server::cmdNick(Client &client, std::string nick)
@@ -148,7 +160,7 @@ bool	Server::cmdUser(Client &client, std::string user)
 		return (false);
 	}
 	// err:462, already registered
-	else if (!this->findUser())
+	else if (!this->findUserClient())
 	{
 		send(fdc, 462ERR_ALREADYREGISTERED.c_str(), 462ERR_ALREADYREGISTERED.length(), 0);
 		return (false);
@@ -161,6 +173,16 @@ bool	Server::cmdUser(Client &client, std::string user)
 // 1. try with no args, should 461
 // 2. try with already used user, should 462
 // 3. normal behavior set user
+}
+
+void	Server::sendToUsersInChan(Channel &channel, Client &client, std::string msg)
+{
+	std::vector<Client *> users = channel->getUsr();
+	for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++)
+	{
+		if ((*u_it)->getNickname() != client.getNickname())
+			send((*u_it).getFD(), msg);
+	}
 }
 
 void	Server::cmdJoinNames(Client &client, Channel &channel)
@@ -234,19 +256,72 @@ bool	Server::cmdJoin(Client &client, std::string chanName, Server &serv, std::st
 		{
 			client.joinChannel(channel);
 			send(fdc, MSG(client.getNickname(), client.getUser, "JOIN", chanName));
-			std::vector<Client *> users = channel->getUsr();
-			for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++)
-			{
-				if ((*u_it)->getNickname() != client.getNickname())
-					send((*u_it).getFD(), MSG(client.getNickname(), client.getUser, "JOIN", chanName));
-			}
+			sendToUsersInChan(channel, client, MSG(client.getNickname(), client.getUser, "JOIN", chanName), 
+			/* std::vector<Client *> users = channel->getUsr(); */
+			/* for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++) */
+			/* { */
+			/* 	if ((*u_it)->getNickname() != client.getNickname()) */
+			/* 		send((*u_it).getFD(), MSG(client.getNickname(), client.getUser, "JOIN", chanName)); */
+			/* } */
 			if (!channel->get_topic().empty())
 				send(fdc, 332RPL_TOPIC(client.getNickname(), chanName, channel.getTopic());
 			cmdJoinNames(client, *channel);
+			return (true);
 		}
 	}
+	return (false);
+// output:
+// 1. test no params
+// 2. test channame begining by other than #
+// 3. chan do not exist
+// 4. chan exist
+// 5. if fd not invited
+// 6. if fd banned
+// 7. if fd bad pass to chan
+// 8. normal behavior with all names
 }
 
+bool	Server::cmdPart(Client &client, std::string chanName)
+{
+	std::cout << "Server: Execute cmdPart" << std::endl;
+	int	fdc = client.getFD();
+	// err:461, need more params
+	if (chanName.length() <= 0)
+	{
+		send(fdc, 461ERR_NEEDMOREPARAMS("PART").c_str(), 461ERR_NEEDMOREPARAMS("PART").length(), 0);
+		return (false);
+	}
+	// err:403, no such channel
+	if (findChannel(chanName) == _chan.end())
+	{
+		send(fdc, 403ERR_NOSUCHCHANNEL.c_str(), 403ERR_NOSUCHCHANNEL.length(), 0);
+		return (false);
+	}
+	// err:442, not on channel
+	if (findClientChannel(chanName, client) == channel.getUsr().end())
+	{
+		send(fdc, 442ERR_NOTONCHANNEL(chanName).c_str(), 442ERR_NOTONCHANNEL(chanName).length(), 0);
+		return (false);
+	}
+	Channel *channel = *findChannel(chanName); // NOT SURE : UNDEFINED BEHAVIOR
+	client.leaveChannel(*channel);
+	if (channel->getUsr().size() == 0) // if no more user, delete chan
+	{
+		delete channel;
+		this->_chan.erase(findChannel(chanName);
+	}
+	else // send part to all users
+	{
+		sendToUsersInChan(channel, client, MSG(client.getNickname(), client.getUser, "PART", chanName));
+		return (true);
+	}
+// output when PART:
+// 1. no params leads to 461 PART
+// 2. no such channel leads to 403
+// 3. user not on channel leads to 442
+// 4. when last usr, check if channel is deleted
+// 5. see if all users receive the msg PART
+}
 
 // KR : when to use CAP ?
 void	Server::cmdCAP(void)
