@@ -15,14 +15,13 @@ void	Server::reply(int fdc, std:string num, std::string msg)
 
 void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::string> &params)
 {
-	std::string valid_commands[15] =
+	std::string valid_commands[14] =
 	{
 		"NICK",
 		"USER",
 		"JOIN",
 		"PART",
 		"PRIVMSG", // receive PM
-		"NOTICE",
 		"MOTD",
 		// operators
 		"MODE",
@@ -36,7 +35,7 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 		"KILL"
 	};
 
-	for (idx = 0; idx < 15; idx++)
+	for (idx = 0; idx < 14; idx++)
 	{
 		if (cmd == valid_commands[idx])
 			break;
@@ -45,11 +44,10 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 	{
 		case 1: cmdNick(client, params[0]); break;
 		case 2: cmdUser(client, params[0]); break;
-		case 3: cmdJoin(Client &client, std::string chanName, Server &serv, std::string pwd); break;
-		case 4: cmdPart(Client &client, std::string chanName); break;
-		case 5: cmdMsg(client, "PRIVMSG", params); break;
-		case 6: cmdMsg(client, "NOTICE", params); break;
-		case 7: cmdMotd(client.get_fd(), client.get_nick()); break;
+		case 3: cmdJoin(client, chanName, serv, pwd); break;
+		case 4: cmdPart(client, chanName); break;
+		case 5: cmdMsg(client, params); break;
+		case 6: cmdMotd(client.get_fd(), client.get_nick()); break;
 		case 8: cmdMode(*this, client, params); break;
 		case 9: cmdOper(*this, client, params); break;
 		case 10: cmdKick(void); break;
@@ -125,7 +123,7 @@ bool	Server::cmdNick(Client &client, std::string nick)
 		return (false);
 	}
 	// err:433, nick already exists
-	else if (!this->findNickname(nick))
+	else if (!findNickname(nick))
 	{
 		send(fdc, 433ERR_NICKNAMEINUSE(nick).c_str(), 433ERR_NICKNAMEINUSE(nick).length(), 0);
 		return (false);
@@ -323,8 +321,47 @@ bool	Server::cmdPart(Client &client, std::string chanName)
 // 5. see if all users receive the msg PART
 }
 
+bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
+{
+//input:
+//params : msgtarget, texttobesent
+	std::cout << "Server: Execute cmdMsg" << std::endl;
+	int	fdc = client.getFD();
+	// err:411, no recipient
+	if (params.size() == 0)
+	{
+		send(fdc, 411ERR_NORECIPIENT("PRIVMSG").c_str(), 411ERR_NORECIPIENT("PRIVMSG").length(), 0);
+		return (false);
+	}
+	// err:412, no text to send
+	if (params.size() == 1)
+	{
+		send(fdc, 412ERR_NOTEXTTOSEND.c_str(), 412ERR_NOTEXTTOSEND.length(), 0);
+		return (false);
+	}
+	std::vector<Channel *>::iterator itCh = findChannel(params[0]);
+	if (itCh != _chan.end()) // if target is channel, send to all 
+	{
+		sendToUsersInChan((*itCh), client, MSG(client.getNickname(), client.getUser, "PRIVMSG", params[1]));
+		return (true);
+	}
+	else if (findNickname(client.getNickname())) // if target is client
+	{
+		send(fdc, MSG(client.getNickname(), client.getUser, "PRIVMSG", params[1]));
+		return (true);
+	}
+	send(fdc, 401ERR_NOSUCHNICK(client.getNickname).c_str(), 401ERR_NOSUCHNICK(client.getNickname).length(), 0);
+	return (false);
+//output:
+//1. no param gives 411
+//2. one param gives 412
+//3. if target is channel, see that it is received by ALL chan clients and not others
+//4. if target is user, see that received only by her
+//5. if target is wrong, send 401
+}
+
 // KR : when to use CAP ?
-void	Server::cmdCAP(void)
+bool	Server::cmdCAP(void)
 {
 	std::cout << "Server: Execute cmdCAP" << std::endl;
 }
