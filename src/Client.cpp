@@ -55,7 +55,7 @@ std::string	Client::getUser()
 }
 
 // Setters
-void	Client::setNickname(std::string nick)
+bool	Client::setNickname(std::string nick)
 {
 	_nick = nick;
 }
