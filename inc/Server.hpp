@@ -18,7 +18,10 @@
 # define 353RPL_NAMREPLY(nick, chanName, users) (PREFIX("353") + nick + " = " + chanName + " :" + users + CRLF)
 # define 366RPL_ENDOFNAMES(nick, chanName) (PREFIX("366") + nick + " " + chanName + " :End of /NAMES list" + CRLF)
 
+# define 401ERR_NOSUCHNICK(nick) (PREFIX("401") + nick + " :No such nick/channel" + CRLF)
 # define 403ERR_NOSUCHCHANNEL(chan) (PREFIX("403") + chan + " :No such channel" + CRLF)
+# define 411ERR_NORECIPIENT(cmd) (PREFIX("411") + ":No recipient given " + cmd + CRLF)
+# define 412ERR_NOTEXTTOSEND (PREFIX("412") + ":No text to send" + CRLF)
 # define 431ERR_NONICKNAMEGIVEN (PREFIX("431") + ":No nickname given" + CRLF)
 # define 432ERR_ERRONEUSNICKNAME(nick) (PREFIX("432") + nick + " :Erroneous nickname" + CRLF)
 # define 433ERR_NICKNAMEINUSE(nick) (PREFIX("433") + nick + " :Nickname is already in use" + CRLF)

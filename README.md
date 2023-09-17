@@ -20,9 +20,9 @@
 		- [ ] define nickname TO TEST
 		- [ ] define username TO TEST
 		- [ ] join channel TO TEST
-		- [ ] send private message (PM)
-		- [ ] receive PM
-		- [ ] all sent messages in a channel must be transmitted to all clients who joined this specific channel
+		- [ ] send private message (PM) TO TEST
+		- [ ] receive PM TO TEST
+		- [ ] all sent messages in a channel must be transmitted to all clients who joined this specific channel TO TEST
 		- [ ] we must have operators and basic users
 		- [ ] implement specific commands to channel operators :
 			- [ ] KICK : kick client from chan
@@ -86,12 +86,12 @@
 			- [ ] remove a user from server (KILL?)
 		- [ ] channels begin with #, case insensitive
 - [RFC2813 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2813)
+- [UChicago X-Projects Tutorial](http://chi.cs.uchicago.edu/chirc/irc.html)
 - [How to make an IRC server connection (Sotiriou, 2008)](https://oramind.com/tutorial-how-to-make-an-irc-server-connection/)
 - [Beej's Guide to Network Programming (Hall, 2023)](https://beej.us/guide/bgnet/html/)
 - [IRCgod](https://ircgod.com/posts/)
 - [Socket Programming in C/C++ (GG)](https://www.geeksforgeeks.org/socket-programming-cc/)
 - [Socket Programming In C++:A Beginner's Guide](https://marketsplash.com/tutorials/cpp/cplusplus-scoket/)
-- [UChicago X-Projects](http://chi.cs.uchicago.edu/chirc/irc_examples.html)
 - [Modern IRC Client Protocol (Allnutt, Oaks & Lorentz, WIP)](https://modern.ircdocs.horse/)
 	- [Capability negociation](https://modern.ircdocs.horse/#capability-negotiation) :
 		-  
