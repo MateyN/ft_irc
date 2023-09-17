@@ -7,6 +7,18 @@
 # define    ERROR -1
 # define	MAX_CLIENTS 10		// backlog
 
+//num replies
+# define HOST "localhost"
+# define NICKUSERHOST(nick, user) (nick + "!" + user + "@" + HOST)
+# define ERR_PREFIX(num) (":" + HOST + " " + num + " ")
+
+# define 431ERR_NONICKNAMEGIVEN (ERR_PREFIX("431") + ":No nickname given" + "\r\n")
+# define 432ERR_ERRONEUSNICKNAME(nick) (ERR_PREFIX("432") + nick + " :Erroneous nickname" + "\r\n")
+# define 433ERR_NICKNAMEINUSE(nick) (ERR_PREFIX("433") + nick + " :Nickname is already in use" + "\r\n")
+# define 461ERR_NEEDMOREPARAMS(command) (ERR_PREFIX("461") + command + ":Not enough parameters")
+# define 462ERR_ALREADYREGISTERED (ERR_PREFIX("462") + ":Unauthorized command (already registered)")
+# define 473ERR_INVITEONLYCHAN(chan) (ERR_PREFIX("462") + chan + " :Unauthorized command (already registered)")
+
 #include "Client.hpp"
 #include "Channel.hpp"
 #include <iostream>

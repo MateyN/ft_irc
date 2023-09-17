@@ -249,9 +249,9 @@ Client *Server::addClient(int fd)
     return client;
 }
 
-Channel *Server::addChan(std::string name)
+Channel *Server::addChan(std::string name, std::string op)
 {
-    Channel *chan = new Channel(name);
+    Channel *chan = new Channel(name, op);
     return chan;
 }
 

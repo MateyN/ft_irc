@@ -8,8 +8,9 @@ Channel::Channel()
     _topic = "";
 }
 
-Channel::Channel(std::string name): _chanName(name)
+Channel::Channel(std::string name, std::string op): _chanName(name)
 {
+	_op.push_back(op);
     _topic = "";
 }
 
@@ -76,6 +77,26 @@ void    Channel::eraseUser(Client *client, int fd)
             return ;
         }
     }
+}
+
+bool	Channel:fdIsInvited(int fdc)
+{
+	for (std::vector<int>::iterator	it = _invite.begin(); it != _invite.end(); it++)
+	{
+		if ((*it) == fdc)
+			return (true);
+	}
+    return (false);
+}
+
+bool	Channel:fdIsBanned(int fdc)
+{
+	for (std::vector<int>::iterator	it = _banned.begin(); it != _banned.end(); it++)
+	{
+		if ((*it) == fdc)
+			return (true);
+	}
+    return (false);
 }
 
 bool    Channel::User(Client *client)

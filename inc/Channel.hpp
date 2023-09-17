@@ -10,7 +10,7 @@ class   Channel
 {
     public:
         Channel();
-        Channel(std::string name);
+        Channel(std::string name, std::string op);
         Channel(const Channel& src);
         Channel& operator=(const Channel &rhs);
         ~Channel();
@@ -28,6 +28,8 @@ class   Channel
         void        eraseOp(Client *client, int fd);
         void        addUser(Client *client);
         void        eraseUser(Client *client, int fd);
+		bool		fdIsInvited(int fdc);
+		bool		fdIsBanned(int fdc);
 
         bool        Op(Client *client);
         bool        User(Client *client);
@@ -35,7 +37,10 @@ class   Channel
     private:
         std::string _chanName;
         std::string _topic;
-        std::string _password;
+        std::string _mode;
+        std::string	_password;
+		std::vector<int>		_invite;
+		std::vector<int>		_banned;
 
         std::vector<Client *>   _usr;
         std::vector<Client *>   _op;
