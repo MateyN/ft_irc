@@ -7,35 +7,28 @@
 // 2. Do connection registration
 //
 
-void	Server::reply(int fdc, std:string num, std::string msg)
-{
-	std::string	reply = ":localhost " + num + " " + msg + "\r\n";
-	send(fdc, reply.c_str(), reply.length(), 0);
-}
-
 void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::string> &params)
 {
-	std::string valid_commands[14] =
+	std::string valid_commands[5] =
 	{
 		"NICK",
 		"USER",
 		"JOIN",
 		"PART",
 		"PRIVMSG", // receive PM
-		"MOTD",
-		// operators
-		"MODE",
-		"OPER",
-		"KICK",
-		"INVITE",
-		"TOPIC",
-		// 
-		"PING",
-		"QUIT",
-		"KILL"
+		/* // operators */
+		/* "MODE", */
+		/* "OPER", */
+		/* "KICK", */
+		/* "INVITE", */
+		/* "TOPIC", */
+		/* // */ 
+		/* "PING", */
+		/* "QUIT", */
+		/* "KILL" */
 	};
 
-	for (idx = 0; idx < 14; idx++)
+	for (idx = 0; idx < 5; idx++)
 	{
 		if (cmd == valid_commands[idx])
 			break;
@@ -47,15 +40,14 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 		case 3: cmdJoin(client, chanName, serv, pwd); break;
 		case 4: cmdPart(client, chanName); break;
 		case 5: cmdMsg(client, params); break;
-		case 6: cmdMotd(client.get_fd(), client.get_nick()); break;
-		case 8: cmdMode(*this, client, params); break;
-		case 9: cmdOper(*this, client, params); break;
-		case 10: cmdKick(void); break;
-		case 11: cmdInvite(void); break;
-		case 12: cmdTopic(*this, client, params); break;
-		case 13: cmdPing(client); break;
-		case 14: cmdQuit(client); break;
-    	case 15: cmdKill(*this, client, params); break;
+		/* case 8: cmdMode(*this, client, params); break; */
+		/* case 9: cmdOper(*this, client, params); break; */
+		/* case 10: cmdKick(void); break; */
+		/* case 11: cmdInvite(void); break; */
+		/* case 12: cmdTopic(*this, client, params); break; */
+		/* case 13: cmdPing(client); break; */
+		/* case 14: cmdQuit(client); break; */
+    	/* case 15: cmdKill(*this, client, params); break; */
 	}
 }
 
@@ -361,7 +353,7 @@ bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
 }
 
 // KR : when to use CAP ?
-bool	Server::cmdCAP(void)
-{
-	std::cout << "Server: Execute cmdCAP" << std::endl;
-}
+/* bool	Server::cmdCAP(void) */
+/* { */
+/* 	std::cout << "Server: Execute cmdCAP" << std::endl; */
+/* } */

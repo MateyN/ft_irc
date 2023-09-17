@@ -56,6 +56,7 @@
 class Server
 {
     public:
+		// server.cpp
         Server();
         Server(const Server& src);
         Server& operator=(const Server &rhs);
@@ -105,7 +106,22 @@ class Server
         Client*     addClient(int fd);
         Channel*    addChan(std::string name);
 
+		// cmd.cpp
+		void								callCmd(Client &client, const std::string& cmd, std::vector<std::string> &params);
+		bool								findNickname(std::string &nick);
+		bool								findUserClient(std::string &user);
+		std::vector<Channel *>::iterator	findChannel(std::string &chan);
+		std::vector<Client *>::iterator		findClientChannel(std::string &nick, Channel &channel);
+		bool								cmdNick(Client &client, std::string nick);
+		bool								cmdUser(Client &client, std::string user);
+		void								sendToUsersInChan(Channel &channel, Client &client, std::string msg);
+		void								cmdJoinNames(Client &client, Channel &channel);
+		bool								cmdJoin(Client &client, std::string chanName, Server &serv, std::string pwd);
+		bool								cmdPart(Client &client, std::string chanName);
+		bool								cmdMsg(Client &client, std::vector<std::string> &params);
+
     private:
+		// server.cpp
         int                         _socket;
         int                         _port;
         std::string                 password;
@@ -114,6 +130,8 @@ class Server
         std::vector<Client *>	    _cli;
         std::vector<Channel *>      _chan;
         std::map<int, std::string>  msgBuffer;
+
+		// cmd.cpp
 
 };
 
