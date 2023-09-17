@@ -55,7 +55,7 @@ std::string	Client::getUser()
 }
 
 // Setters
-void	Client::setNickname(std::string nick)
+void		Client::setNickname(std::string nick)
 {
 	_nick = nick;
 }
@@ -79,3 +79,27 @@ bool    Client::isConnect()
 {
     return _connect;
 }
+
+void 	Client::joinChannel(Channel *channel)
+{
+	channel->add_user(this);
+	this->_channels.insert(std::pair<std::string, Channel *>(channel->getChanName(), channel));
+}
+
+void 	Client::leaveChannel(Channel &channel)
+{
+	channel.remove_user(this->get_fd());
+	_channels.erase(channel.getChanName());
+	send(MSG(_nick, _username, "PART", channel.getChanName()));
+}
+
+bool	Client::inChannel(const std::string& channel_name)
+{
+	std::map<std::string, Channel *> &channels = this->get_channels();
+
+	std::map<std::string, Channel *>::iterator it = channels.find(channel_name);
+	if (it == channels.end())
+		return false;
+	return true;
+}
+

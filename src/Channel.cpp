@@ -8,8 +8,9 @@ Channel::Channel()
     _topic = "";
 }
 
-Channel::Channel(std::string name): _chanName(name)
+Channel::Channel(std::string name, std::string op): _chanName(name)
 {
+	_op.push_back(op);
     _topic = "";
 }
 
@@ -33,27 +34,8 @@ Channel::~Channel()
 {
 
 }
-    // getters
-std::string Channel::getChanName()
-{
-    return _chanName;
-}
 
-std::string Channel::getTopic()
-{
-    return _topic;
-}
-
-std::string Channel::getPassword()
-{
-    return _password;
-}
-
-std::vector<Client *>   Channel::getUsr()
-{
-    return _usr;
-}
-    // setters
+// setters
 void    Channel::setTopic(std::string topic)
 {
     _topic = topic;
@@ -76,6 +58,26 @@ void    Channel::eraseUser(Client *client, int fd)
             return ;
         }
     }
+}
+
+bool	Channel:fdIsInvited(int fdc)
+{
+	for (std::vector<int>::iterator	it = _invite.begin(); it != _invite.end(); it++)
+	{
+		if ((*it) == fdc)
+			return (true);
+	}
+    return (false);
+}
+
+bool	Channel:fdIsBanned(int fdc)
+{
+	for (std::vector<int>::iterator	it = _banned.begin(); it != _banned.end(); it++)
+	{
+		if ((*it) == fdc)
+			return (true);
+	}
+    return (false);
 }
 
 bool    Channel::User(Client *client)

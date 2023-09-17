@@ -146,6 +146,7 @@ void    Server::newClientConnect()
     int         cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen); // store the client socket
 
     if (cliSocket != ERROR)
+		// KR : add MAXCLIENT here ???
     {
         // init a new pollfd struct to monitor the client's socket
         pollfd  pfdc;
@@ -155,6 +156,7 @@ void    Server::newClientConnect()
         _pfds.push_back(pfdc); // add the pollfd struct for event monitoring
 
         client = addClient(cliSocket); // create and init a new client obj
+		// KR : put client to _cli vector ?
         std::cout << "New client connected" << std::endl;
     }
     else
@@ -169,7 +171,7 @@ void    Server::clientData(pollfd &pfdc)
 
     if (storedBytes <= 0) // if no data received or connected client
     {
-       clientDisc(pfdc.fd);
+		clientDisc(pfdc.fd);
     }
     else
     {
@@ -182,6 +184,10 @@ void    Server::processRecvData(int send, char *data, int size)
     std::string recvData(data, size);
     // add the received data to the message buffer for the sender
     msgBuffer[send] += recvData;
+	std::cout << "*** processRecvData: " << std::endl <<
+		"send:" << send << std::endl <<
+		"data:" << data << std::endl <<
+		"size:" << size << std::endl;
     // checks if the received data contains a complete message
     size_t  findEnd = msgBuffer[send].find("\r\n");
     while (findEnd != std::string::npos)
@@ -191,6 +197,9 @@ void    Server::processRecvData(int send, char *data, int size)
         msgBuffer[send].erase(0, findEnd + sizeof("\r\n"));
         // finding the next complete message in the buffer
         findEnd = msgBuffer[send].find("\r\n");
+		/* std::cout << "completemsg: " << completeMsg << std::endl; */
+		/* std::cout << "msgbuffer: " << msgBuffer[send] << std::endl; */
+		/* std::cout << "findend: " << findEnd << std::endl; */
     }
 }
 
@@ -240,9 +249,9 @@ Client *Server::addClient(int fd)
     return client;
 }
 
-Channel *Server::addChan(std::string name)
+Channel *Server::addChan(std::string name, std::string op)
 {
-    Channel *chan = new Channel(name);
+    Channel *chan = new Channel(name, op);
     return chan;
 }
 

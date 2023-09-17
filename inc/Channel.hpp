@@ -10,16 +10,18 @@ class   Channel
 {
     public:
         Channel();
-        Channel(std::string name);
+        Channel(std::string name, std::string op);
         Channel(const Channel& src);
         Channel& operator=(const Channel &rhs);
         ~Channel();
 
         // getters
-        std::string getChanName();
-        std::string getPassword();
-        std::string getTopic();
-        std::vector <Client *>  getUsr();
+        std::string getChanName() { return _chanName; }
+        std::string getTopic() { return _password; }
+        std::string getMode() { return _mode; }
+        std::string getPassword() { return _password; }
+        std::vector <Client *>  getUsr() { return _usr; }
+        std::vector <Client *>  getOp() { return _op; }
 
         // setters
         void        setTopic(std::string topic);
@@ -28,17 +30,22 @@ class   Channel
         void        eraseOp(Client *client, int fd);
         void        addUser(Client *client);
         void        eraseUser(Client *client, int fd);
+		bool		fdIsInvited(int fdc);
+		bool		fdIsBanned(int fdc);
 
         bool        Op(Client *client);
         bool        User(Client *client);
 
     private:
-        std::string _chanName;
+        std::string _chanName; // must begin only by '#'
         std::string _topic;
-        std::string _password;
+        std::string _mode;
+        std::string	_password;
+		std::vector<int>		_invite;
+		std::vector<int>		_banned;
 
         std::vector<Client *>   _usr;
-        std::vector<Client *>   _op;
+        std::vector<Client *>   _op; // op is also in usr
 };
 
 #endif
