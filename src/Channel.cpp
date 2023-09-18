@@ -55,6 +55,7 @@ void    Channel::eraseUser(Client *client, int fd)
         if ((*usr)->getFD() == fd)
         {
             _usr.erase(usr);
+			// also erase from op if usr is op
             return ;
         }
     }

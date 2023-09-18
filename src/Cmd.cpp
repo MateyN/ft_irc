@@ -16,10 +16,10 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 		"JOIN",
 		"PART",
 		"PRIVMSG", // receive PM
-		/* // operators */
+		// operators
+		/* "KICK", */
 		/* "MODE", */
 		/* "OPER", */
-		/* "KICK", */
 		/* "INVITE", */
 		/* "TOPIC", */
 		/* // */ 
@@ -42,11 +42,11 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 		case 3: cmdJoin(client, params); break;
 		case 4: cmdPart(client, params); break;
 		case 5: cmdMsg(client, params); break;
-		/* case 8: cmdMode(*this, client, params); break; */
-		/* case 9: cmdOper(*this, client, params); break; */
-		/* case 10: cmdKick(void); break; */
+		case 6: cmdKick(client, params); break;
 		/* case 11: cmdInvite(void); break; */
 		/* case 12: cmdTopic(*this, client, params); break; */
+		/* case 6: cmdMode(*this, client, params); break; */
+		/* case 9: cmdOper(*this, client, params); break; */
 		/* case 13: cmdPing(client); break; */
 		/* case 14: cmdQuit(client); break; */
     	/* case 15: cmdKill(*this, client, params); break; */
@@ -400,3 +400,50 @@ bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
 /* { */
 /* 	std::cout << "Server: Execute cmdCAP" << std::endl; */
 /* } */
+
+bool	Server::cmdKick(Client &client, std::vector<std::string> &params)
+{
+//input:
+//params : channnel(begining by #) target
+	(void)params;
+	std::cout << "Server: Execute cmdKick" << std::endl;
+	int			fdc = client.getFD();
+	std::string	msg;
+	// err:461, need more params
+	if (params.size() < 2)
+	{
+		msg = ERR461_NEEDMOREPARAMS("KICK");
+		send(fdc, msg.c_str(), msg.length(), 0);
+		return (false);
+	}
+	else if (params[0][0] != '#' || findChannel() == _chan.end())
+	{
+		msg = ERR403_NOSUCHCHANNEL(chanName);
+		send(fdc, msg.c_str(), msg.length(), 0);
+		return (false);
+	}
+	// ERR441_USERNOTINCHANNEL(nick, chanName) // for client when nick is not on channel
+	// ERR442_NOTONCHNNEL(chanName) // when client is not user on channel
+	Channel *channel = *findChannel(param[0]);
+    channel->eraseUser(client, fdc);
+	msg = MSG(client.getNickname(), client.getUser(), "KICK", "You have been kicked from channel :" + param[0]);
+	send(fdc, msg.c_str(), msg.length(), 0);
+	return (true);
+}
+
+bool	Server::cmdMode(Client &client, std::vector<std::string> &params)
+{
+//input:
+//params : target modes
+	(void)params;
+	std::cout << "Server: Execute cmdMode" << std::endl;
+	int			fdc = client.getFD();
+	std::string	msg;
+	// err:461, need more params
+	if (params.size() < 2)
+	{
+		msg = ERR461_NEEDMOREPARAMS("MODE");
+		send(fdc, msg.c_str(), msg.length(), 0);
+		return (false);
+	}
+}
