@@ -82,20 +82,20 @@ bool    Client::isConnect()
 
 void 	Client::joinChannel(Channel *channel)
 {
-	channel->add_user(this);
+	channel->addUser(this);
 	this->_channels.insert(std::pair<std::string, Channel *>(channel->getChanName(), channel));
 }
 
 void 	Client::leaveChannel(Channel &channel)
 {
-	channel.remove_user(this->get_fd());
+	channel.eraseUser(this, this->getFD());
 	_channels.erase(channel.getChanName());
-	send(MSG(_nick, _username, "PART", channel.getChanName()));
+	send(this->getFD(), MSG(_nick, _username, "PART", channel.getChanName()).c_str(), MSG(_nick, _username, "PART", channel.getChanName()).length(), 0);
 }
 
 bool	Client::inChannel(const std::string& channel_name)
 {
-	std::map<std::string, Channel *> &channels = this->get_channels();
+	std::map<std::string, Channel *> &channels = this->getChannels();
 
 	std::map<std::string, Channel *>::iterator it = channels.find(channel_name);
 	if (it == channels.end())

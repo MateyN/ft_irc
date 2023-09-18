@@ -8,9 +8,9 @@ Channel::Channel()
     _topic = "";
 }
 
-Channel::Channel(std::string name, std::string op): _chanName(name)
+Channel::Channel(std::string name, Client* op): _chanName(name)
 {
-	_op.push_back(op);
+	_op.push_back(op); // add operator to operator list
     _topic = "";
 }
 
@@ -60,7 +60,7 @@ void    Channel::eraseUser(Client *client, int fd)
     }
 }
 
-bool	Channel:fdIsInvited(int fdc)
+bool	Channel::fdIsInvited(int fdc)
 {
 	for (std::vector<int>::iterator	it = _invite.begin(); it != _invite.end(); it++)
 	{
@@ -70,7 +70,7 @@ bool	Channel:fdIsInvited(int fdc)
     return (false);
 }
 
-bool	Channel:fdIsBanned(int fdc)
+bool	Channel::fdIsBanned(int fdc)
 {
 	for (std::vector<int>::iterator	it = _banned.begin(); it != _banned.end(); it++)
 	{
