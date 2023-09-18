@@ -126,7 +126,7 @@ bool    Server::serverConnect()
             {
                 if (_pfds[i].revents & POLLIN) // checks if the event data is ready to be read
                 {
-                    if (_pfds[i].fd == _socket)
+                    if (_pfds[i].fd == _socket) // KR not here
                     {
                         newClientConnect();
                     }
@@ -249,7 +249,7 @@ Client *Server::addClient(int fd)
     return client;
 }
 
-Channel *Server::addChan(std::string name, std::string op)
+Channel *Server::addChan(std::string name, Client* op)
 {
     Channel *chan = new Channel(name, op);
     return chan;

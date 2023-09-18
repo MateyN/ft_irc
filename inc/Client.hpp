@@ -2,7 +2,7 @@
 # define CLIENT_HPP
 
 //#include "Server.hpp"
-//#include "Channel.hpp"
+#include "Channel.hpp"
 # include <iostream>
 # include <sys/socket.h>
 # include <netinet/in.h>

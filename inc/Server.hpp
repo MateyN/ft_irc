@@ -8,29 +8,26 @@
 # define	MAX_CLIENTS 10		// backlog
 
 //num replies
+# define TOSTR(a) static_cast<std::string>(a)
 # define CRLF "\r\n"
-# define HOST "localhost"
-# define PREFIX(num) (":" + HOST + " " + num + " ")
 
-# define MSG(nick, user, cmd, msg) (":" + nick + "!" + user + "@" + HOST + " " + cmd + " :" + msg + CRLF)
-
-# define 332RPL_TOPIC(nick, chanName, topic) (PREFIX("332") + nick + " " + chanName + " :" + topic + CRLF)
-# define 353RPL_NAMREPLY(nick, chanName, users) (PREFIX("353") + nick + " = " + chanName + " :" + users + CRLF)
-# define 366RPL_ENDOFNAMES(nick, chanName) (PREFIX("366") + nick + " " + chanName + " :End of /NAMES list" + CRLF)
-
-# define 401ERR_NOSUCHNICK(nick) (PREFIX("401") + nick + " :No such nick/channel" + CRLF)
-# define 403ERR_NOSUCHCHANNEL(chan) (PREFIX("403") + chan + " :No such channel" + CRLF)
-# define 411ERR_NORECIPIENT(cmd) (PREFIX("411") + ":No recipient given " + cmd + CRLF)
-# define 412ERR_NOTEXTTOSEND (PREFIX("412") + ":No text to send" + CRLF)
-# define 431ERR_NONICKNAMEGIVEN (PREFIX("431") + ":No nickname given" + CRLF)
-# define 432ERR_ERRONEUSNICKNAME(nick) (PREFIX("432") + nick + " :Erroneous nickname" + CRLF)
-# define 433ERR_NICKNAMEINUSE(nick) (PREFIX("433") + nick + " :Nickname is already in use" + CRLF)
-# define 442ERR_NOTONCHANNEL(chan) (PREFIX("442") + chan + " :You're not on that channel" + CRLF)
-# define 461ERR_NEEDMOREPARAMS(command) (PREFIX("461") + command + ":Not enough parameters" + CRLF)
-# define 462ERR_ALREADYREGISTERED (PREFIX("462") + ":Unauthorized command (already registered)" + CRLF)
-# define 473ERR_INVITEONLYCHAN(chan) (PREFIX("473") + chan + " :Cannot join channel (+i)" + CRLF)
-# define 474ERR_BANNEDFROMCHAN(chan) (PREFIX("474") + chan + " :Cannot join channel (+b)" + CRLF)
-# define 475ERR_BADCHANNELKEY(chan) (PREFIX("475") + chan + " :Cannot join channel (+k)" + CRLF)
+# define MSG(nick, user, cmd, msg)				":" + nick + "!" + user + "@localhost " + cmd + " :" + msg + "\r\n"
+# define RPL332_TOPIC(nick, chanName, topic) 	":localhost 332 " + nick + " " + chanName + " :" + topic + "\r\n"
+# define RPL353_NAMREPLY(nick, chanName, users)	":localhost 353 " + nick + " = " + chanName + " :" +  users + "\r\n"
+# define RPL366_ENDOFNAMES(nick, chanName)		":localhost 366 " + nick + " " + chanName + " :End of /NAMES list\r\n"
+# define ERR401_NOSUCHNICK(nick)				":localhost 401 " + nick + " :No such nick/channel\r\n"
+# define ERR403_NOSUCHCHANNEL(chan)				":localhost 403 " + chan + " :No such channel\r\n"
+# define ERR411_NORECIPIENT(cmd)				":localhost 411 :No recipient given " cmd "\r\n"
+# define ERR412_NOTEXTTOSEND					":localhost 412 :No text to send\r\n"
+# define ERR431_NONICKNAMEGIVEN					":localhost 431 :No nickname given\r\n"
+# define ERR432_ERRONEUSNICKNAME(nick)			":localhost 432 " + nick + " :Erroneous nickname\r\n"
+# define ERR433_NICKNAMEINUSE(nick)				":localhost 433 " + nick + " :Nickname is already in use\r\n"
+# define ERR442_NOTONCHANNEL(chan)				":localhost 442 " + chan + " :You're not on that channel\r\n"
+# define ERR461_NEEDMOREPARAMS(cmd)				":localhost 461 " cmd  ":Not enough parameters\r\n"
+# define ERR462_ALREADYREGISTERED				":localhost 462 :Unauthorized command (already registered)\r\n"
+# define ERR473_INVITEONLYCHAN(chan)			":localhost 473 " + chan + " :Cannot join channel (+i)\r\n"
+# define ERR474_BANNEDFROMCHAN(chan)			":localhost 474 " + chan + " :Cannot join channel (+b)\r\n"
+# define ERR475_BADCHANNELKEY(chan)				":localhost 475 " + chan + " :Cannot join channel (+k)\r\n"
 
 #include "Client.hpp"
 #include "Channel.hpp"
@@ -53,6 +50,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+class Client;
+class Channel;
 class Server
 {
     public:
@@ -104,20 +103,20 @@ class Server
         void        setPass(std::string pass);
 
         Client*     addClient(int fd);
-        Channel*    addChan(std::string name);
+		Channel* 	addChan(std::string name, Client* op);
 
 		// cmd.cpp
 		void								callCmd(Client &client, const std::string& cmd, std::vector<std::string> &params);
-		bool								findNickname(std::string &nick);
-		bool								findUserClient(std::string &user);
-		std::vector<Channel *>::iterator	findChannel(std::string &chan);
-		std::vector<Client *>::iterator		findClientChannel(std::string &nick, Channel &channel);
-		bool								cmdNick(Client &client, std::string nick);
+		bool								findNickname(const std::string &nick);
+		bool								findUserClient(const std::string &user);
+		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
+		std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
+		bool								cmdNick(Client &client, const std::string &nick);
 		bool								cmdUser(Client &client, std::string user);
 		void								sendToUsersInChan(Channel &channel, Client &client, std::string msg);
 		void								cmdJoinNames(Client &client, Channel &channel);
-		bool								cmdJoin(Client &client, std::string chanName, Server &serv, std::string pwd);
-		bool								cmdPart(Client &client, std::string chanName);
+		bool								cmdJoin(Client &client, std::vector<std::string> &params);
+		bool								cmdPart(Client &client, std::vector<std::string> &params);
 		bool								cmdMsg(Client &client, std::vector<std::string> &params);
 
     private:
