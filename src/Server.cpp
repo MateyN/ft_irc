@@ -29,11 +29,11 @@ Server	&Server::operator=(const Server &rhs)
 	_cli = rhs._cli;
 	_chan = rhs._chan;
 	_password = rhs._password;
-	_ping = rhs._ping;
 
 	return *this;
 }
 
+// Default Destructor 
 Server::~Server()
 {
 	if (clients != NULL)
@@ -47,6 +47,8 @@ Server::~Server()
 		delete channels;
 		channels = NULL;
 	}
+	//std::cout << "Destructor Server Called" << std::endl;
+	//return;
 }
 
 void	Server::setPort(int port)
@@ -138,7 +140,7 @@ bool	Server::serverConnect()
 						_pfds.push_back(pfdc);
 						clients = addClient(cliSocket); // create and init a new client obj
 								// KR : put client to _cli vector ?
-						std::cout << "New client connected" << std::endl;
+						std::cout << CYAN << "New client connected" << RESET << std::endl;
 						isCAP(clients);
 					}
 					else
@@ -170,7 +172,7 @@ bool	Server::serverConnect()
 					{
 						if (storedBytes == 0)
 						{
-							std::cout << "Socket number: " << send << " has been disconnected." << std::endl;
+							std::cout << RED << "Socket number: " << send << " has been disconnected." << RESET << std::endl;
 						}
 						else
 							std::cout << ERRNOMSG << strerror(errno) << std::endl;
@@ -212,22 +214,20 @@ bool	Server::serverConnect()
 
 void Server::parseCmd(std::string buf)
 {
-	std::string input(buf);
-	size_t space = input.find(' ');
+    token.clear();
+    cmd.clear();
 
-	if (space != std::string::npos)
-	{
-		token = input.substr(0, space);
-		cmd = input.substr(space + 1, input.size());
-	}
-	else
-	{
-		token = input;
-		cmd.clear();
-	}
-	std::cout << std::endl;
+    size_t space = buf.find(' ');
+    if (space != std::string::npos)
+    {
+        token = buf.substr(0, space);
+        cmd = buf.substr(space + 1);
+    }
+    else
+    {
+        token = buf;
+    }
 }
-
 
 void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 {
@@ -239,8 +239,8 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::cout << "Received : " << line << std::endl;
-		if (! line.empty())
+		std::cout << YELLOW << "Received : " << line << RESET << std::endl;
+		if (!line.empty())
 		{
 			parseCmd(line);
 			callCmd(token, client, channel);
@@ -343,7 +343,7 @@ void	Server::isCAP(Client *client)
 	}
 }
 
-bool		Server::chanExist(std::string channel)
+bool	Server::chanExist(std::string channel)
 {
 	for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
 	{

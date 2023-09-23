@@ -40,96 +40,84 @@
 # define WHITE   "\033[37m"      /* White */
 # define LIGHTGREEN "\033[1;32m" /* Light Green */
 
-//class Channel;
-
 class Server
 {
 	public:
-		// server.cpp
-        Server();
-        Server(const Server& src);
-        Server& operator=(const Server &rhs);
-        ~Server();
+				// server.cpp
+		Server();
+		Server(const Server &src);
+		Server	&operator=(const Server &rhs);
+		~Server();
 
 		Client		*clients;
 		Channel		*channels;
 
-		std::string token;
-        std::string cmd;
-		bool    	setNick;
-		bool   	 	validPass;
+		std::string	token;
+		std::string	cmd;
+		bool		setNick;
+		bool		validPass;
 
-		bool    	setupServerSocket();
-        bool    	serverConnect();
-        //void        				Sockets(); // maybe won't need that
-		Client*     addClient(int fd);
+		bool		setupServerSocket();
+		bool		serverConnect();
+		//void        Sockets(); // maybe won't need that
+		Client*		addClient(int fd);
 		Channel* 	addChan(std::string name);
-		void  		chanErase(Channel *chan);
+		void		chanErase(Channel *channel);
 		bool		chanExist(std::string channel);
 		bool		nickExist(std::string nick);
 		void		processRecvData(std::string buf, Client *client, Channel *channel);
 		void		isCAP(Client *client);
-		void		msgSend(std::string msg, int fd);
-		void		welcomeMsg(Client *client);
-		void		errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
 
-		int     	getPort();
+		int			getPort();
 		int			getSocket();
-		void    	setPort(int port);
-        std::string getPassword();
-        void        setPass(std::string pass);
-		Channel*	getChan(std::string msg);
+		void		setPort(int port);
+		std::string	getPassword();
+		void		setPass(std::string pass);
+		Channel*	getChan(std::string msgBuf);
 
 		void		parseCmd(std::string buf);
-		std::string	parseChannel(std::string input, size_t start);
-
-		// cmd.cpp
-		void		callCmd(std::string cmd, Client *client, Channel *channel);
-		//bool								findNickname(const std::string &nick);
-		//bool								findUserClient(const std::string &user);
-		//std::vector<Channel *>::iterator	findChannel(const std::string &chan);
-		//std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
-		//bool								cmdNick(Client &client, const std::string &nick);
-		//bool								cmdUser(Client &client, std::string user);
+		std::string	parseChannel(std::string buf, size_t pos);
+		void		msgSend(std::string msg, int fd);
 		void		sendToUsersInChan(std::string msg, int fd);
-		//void								cmdJoinNames(Client &client, Channel &channel);
-		//bool								cmdJoin(Client &client, std::vector<std::string> &params);
-		//bool								cmdPart(Client &client, std::vector<std::string> &params);
+		void		welcomeMsg(Client *client);
+		void 		errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
+	
+		void		callCmd(std::string cmd, Client *client, Channel *channel);
 
-			class ExceptionServer : public std::exception
-        	{
-				public:
-					ExceptionServer(const char* msg) : _msg(msg) {}
-					const char* what() const throw()
-             	   {
-						return _msg;
-					}
-				private:
-					const char* _msg;
-			};
+		class ExceptionServer : public std::exception
+		{
+			public:
+				ExceptionServer(const char* msg) : _msg(msg) {}
+				const char* what() const throw()
+				{
+					return _msg;
+				}
+
+			private:
+				const char* _msg;
+		};
 
 	private:
 				// server.cpp
-			int						_socket;
-			int						_auth;
-			int						_port;
-			struct sockaddr_in		_addr;
-			std::vector<int>		_sockets;
-			std::vector<pollfd>		_pfds;
-			std::vector<Client*>	_cli;
-			std::vector<Channel*>	_chan;
-			std::string				_password;
-			int						_ping;
-			std::string				valid_commands[7];
+		int						_socket;
+		int						_auth;
+		int						_port;
+		struct sockaddr_in		_addr;
+		std::vector<int>		_sockets;
+		std::vector<pollfd>		_pfds;
+		std::vector<Client*>	_cli;
+		std::vector<Channel*>	_chan;
+		std::string				_password;
+		std::string 			valid_commands[7];
 
 				// cmd.cpp
-			void	CAP(Client *client, Channel *channel);
-			void	PING(Client *client, Channel *channel);
-			void	NICK(Client *client, Channel *channel);
-			void	USER(Client *client, Channel *channel);
-			void	PASS(Client *client, Channel *channel);
-			void	JOIN(Client *client, Channel *channel);
-			void	QUIT(Client *client, Channel *channel);
+		void					CAP(Client *client, Channel *channel);
+		void					PING(Client *client, Channel *channel);
+		void					NICK(Client *client, Channel *channel);
+		void					USER(Client *client, Channel *channel);
+		void					JOIN(Client *client, Channel *channel);
+		void					PASS(Client *client, Channel *channel);
+		void					QUIT(Client *client, Channel *channel);
 };
 
 #endif

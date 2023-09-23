@@ -1,17 +1,15 @@
-#include "../inc/Client.hpp"
 #include "../inc/Server.hpp"
-#include "../inc/Channel.hpp"
+#include "../inc/Client.hpp"
 #include "../inc/Message.hpp"
+#include "../inc/Channel.hpp"
 
-// NOTES :
-// 1. Change "!!!" which corresponds to var names
-// 2. Do connection registration
-//
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[7] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT" };
-	void	(Server::*funcPtr[])(Client *client, Channel *channel) = 
+
+	std::string valid_commands[7] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT"};
+
+	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
 		&Server::CAP,
 		&Server::PING,
@@ -22,8 +20,8 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::QUIT
 	};
 
-		for (int i = 0; i < 7; i++)
-		{
+	for (int i = 0; i < 7; i++)
+	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
 			(this->*funcPtr[i])(client, channel);
@@ -45,9 +43,9 @@ void	Server::PING(Client *client, Channel *channel)
 {
 	(void)channel;
 	std::string ping = token;
-	std::string pingContent = cmd;
-	std::string pongResponse = "PONG " + pingContent;
-	msgSend(pongResponse, client->getFD());
+	std::string sendPing = cmd;
+	std::string clientResponse = "PONG " + sendPing;
+	msgSend(clientResponse, client->getFD());
 }
 
 void Server::NICK(Client *client, Channel *channel)
@@ -61,22 +59,23 @@ void Server::NICK(Client *client, Channel *channel)
 	if (client->_setNick == false)
 	{
 		std::string nickname = cmd;
-		int numberFd = client->getFD();
+		int nick = client->getFD();
 		std::stringstream ss;
-		ss << numberFd;
-		std::string strNumberFd = ss.str();
-		nickname += strNumberFd;
+		ss << nick;
+		std::string strNick = ss.str();
+		nickname += strNick;
 		client->setNickname(nickname);
 		std::string msg = ":" + cmd + " NICK " + nickname;
 		msgSend(msg, client->getFD());
 		client->_setNick = true;
 	}
-	else {
+	else 
+	{
 		std::string newNick = cmd;
-		if(newNick.size() > 30)
+		if(newNick.size() > 25)
 		{
 		errorMsg(ERR432_ERRONEUSNICKNAME, client->getFD(), newNick, "", "", "");
-		std::cerr << "Error: Nickname is longer than 30 characters." << std::endl;
+		std::cerr << "Error: Nickname is longer than 25 characters." << std::endl;
 		return;
 	}
 	for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
@@ -99,7 +98,7 @@ void Server::NICK(Client *client, Channel *channel)
 				std::string oldNick;
 				for (std::vector<Client*>::iterator iter = _cli.begin(); iter != _cli.end(); ++iter)
 				{
-					if ((*iter)->getFD() == client->getFD())
+					if ((*iter)->getFD() == client->getFD()) 
 					{
 						oldNick = (*iter)->getNickname();
 						break;
@@ -118,6 +117,7 @@ void Server::NICK(Client *client, Channel *channel)
 void	Server::USER(Client *client, Channel *channel)
 {
 	(void)channel;
+
 	if (client->isRegister() == false)
 	{
 		return;
@@ -125,58 +125,57 @@ void	Server::USER(Client *client, Channel *channel)
 	std::size_t colonPos = cmd.find(':');
 	if (colonPos != std::string::npos)
 	{
-		std::string UserContent = cmd.substr(colonPos + 1);
-		std::string	msg = "USER : " + UserContent + CRLF;
-		client->setUser(UserContent);
+		std::string user = cmd.substr(colonPos + 1);
+		std::string	msg = "USER : " + user + CRLF;
+		client->setUser(user);
         welcomeMsg(client);
-		}
 	}
+}
 
 void	Server::JOIN(Client *client, Channel *channel)
 {
 	(void)channel;
-	std::cout << LIGHTGREEN << "JOIN COMMAND" << RESET << std::endl;
+	std::cout << GREEN << "COMMAND JOIN" << RESET << std::endl;
 
-	bool						channelExists = false;
-	std::string					chanName;
-	size_t						pos = 0;
-	size_t						hashtagPos = 0;
-	std::vector<std::string>	channelsToAdd;
+	bool						isChannelFound = false;
+	std::string					channelName;
+	size_t						currPos = 0;
+	size_t						start = 0;
+	std::vector<std::string>	channelsToJoin;
 	std::string					msg;
-	std::string					passwordEntered;
+	std::string					pass;
 
 	if (cmd == ":")
 		return;
-	while ((hashtagPos = cmd.find("#", hashtagPos)) != std::string::npos)
+	while ((start = cmd.find("#", start)) != std::string::npos)
 	{
-		chanName = parseChannel(cmd, hashtagPos);
+		channelName = parseChannel(cmd, start);
 
-		if (chanName[0] != '#')
-			chanName = '#' + chanName;
+		if (channelName[0] != '#')
+			channelName = '#' + channelName;
 
-		channelsToAdd.push_back(chanName);
+		channelsToJoin.push_back(channelName);
 
-		hashtagPos = hashtagPos + 1;
+		start = start + 1;
 	}
-	if (channelsToAdd.empty())
+	if (channelsToJoin.empty())
 	{
 		errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "JOIN", "Not enough parameters", "");
 		return;
 	}
-	if ((pos = cmd.find(" ")) != std::string::npos)
+	if ((currPos = cmd.find(" ")) != std::string::npos)
 	{
 		if (cmd.find(":") == std::string::npos)
-			passwordEntered = cmd.substr(pos + 1);
+			pass = cmd.substr(currPos + 1);
 	}
-	std::cout << ": [" + passwordEntered + "]" << std::endl;
-
-	for (std::vector<std::string>::iterator itc = channelsToAdd.begin(); itc != channelsToAdd.end(); itc++)
+	std::cout << ": [" + pass + "]" << std::endl;
+	for (std::vector<std::string>::iterator iter = channelsToJoin.begin(); iter != channelsToJoin.end(); iter++)
 	{
 		for (std::vector<Channel*>::iterator	it = _chan.begin(); it != _chan.end(); it++)
 		{
-			if (((*it)->getChanName() == (*itc)))
+			if (((*it)->getChanName() == (*iter)))
 			{
-				channelExists = true;
+				isChannelFound = true;
 
 				if (channel->getLimitMode())
 				{
@@ -188,7 +187,7 @@ void	Server::JOIN(Client *client, Channel *channel)
 				}
 				if (channel->getPassMode())
 				{
-					if (passwordEntered != channel->getPassword())
+					if (pass != channel->getPassword())
 					{
 						errorMsg(ERR475_BADCHANNELKEY, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
 						return ;
@@ -201,7 +200,6 @@ void	Server::JOIN(Client *client, Channel *channel)
 						errorMsg(ERR443_USERONCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
 						return ;
 					}
-
 					if (!(channel->Guest(client)))
 					{
 						errorMsg(ERR473_INVITEONLYCHAN, client->getFD(), channel->getChanName(), client->getNickname(), "", "");
@@ -209,35 +207,35 @@ void	Server::JOIN(Client *client, Channel *channel)
 					}
 					std::cout << "In the list." << std::endl;
 				}
-				std::cout << "Channel [" + (*itc) + "] already exists" << std::endl;
+				std::cout << "Channel [" + (*iter) + "] already exists." << std::endl;
 				channels = (*it);
 				channels->addUser(client);
 				break;
 			}
 		}
-		if (!channelExists)
+		if (!isChannelFound)
 		{
-			channels = addChan((*itc));
-			std::cout << "Channel [" + (*itc) + "] created." << std::endl;
+			channels = addChan((*iter));
+			std::cout << "Channel [" + (*iter) + "] created." << std::endl;
 			channels->addUser(client);
 			channels->addOp(client);
 		}
-		pos = cmd.find(" :");
-		if (pos != std::string::npos && (std::string::npos + 1) != (*itc).size())
-			channels->setTopic(cmd.substr(pos + 2, cmd.size()), client);
-		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*itc);
+		currPos = cmd.find(" :");
+		if (currPos != std::string::npos && (std::string::npos + 1) != (*iter).size())
+			channels->setTopic(cmd.substr(currPos + 2, cmd.size()), client);
+		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*iter);
 		msgSend(msg, client->getFD());
-		if (!channelExists)
+		if (!isChannelFound)
 		{
-			msg = "MODE " + (*itc) + " +o "+ client->getNickname();
+			msg = "MODE " + (*iter) + " +o "+ client->getNickname();
 			msgSend(msg, client->getFD());
 		}
-		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*itc);
+		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*iter);
 		sendToUsersInChan(msg, client->getFD());
 
 		if (!channels->getTopic().empty())
 		{
-			msg = "TOPIC " + (*itc) + " :" + channels->getTopic();
+			msg = "TOPIC " + (*iter) + " :" + channels->getTopic();
 
 			msgSend(msg, client->getFD());
 			sendToUsersInChan(msg, client->getFD());
@@ -277,9 +275,10 @@ void	Server::PASS(Client *client, Channel *channel)
 void Server::QUIT(Client *client, Channel *channel)
 {
 	(void)channel;
-	std::cout << "Client " << client->getNickname() << " has quit." << std::endl;
+	std::cout << RED << "Client " << client->getNickname() << " has quit." << RESET << std::endl;
 	int clientSocket = client->getFD();
 	close(clientSocket);
+
 	for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
 	{
 		if ((*it)->Guest(client))

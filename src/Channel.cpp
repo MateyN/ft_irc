@@ -30,7 +30,7 @@ Channel &Channel::operator=(const Channel &rhs)
 	_topic = rhs._topic;
 	_topicOp = rhs._topicOp;
 	_isLimitSet = rhs._isLimitSet;
-	_coutLimit = rhs._coutLimit;
+	_countLimit = rhs._countLimit;
 
 	return *this;
 }
@@ -40,26 +40,7 @@ Channel::~Channel()
 
 }
 
-std::string	Channel::getChanName()
-{
-	return (_chanName);
-}
-
-std::string	Channel::getTopic()
-{
-	return (_topic);
-}
-
-std::string	Channel::getPassword()
-{
-	return _password;
-}
-
-std::vector<Client*>	Channel::getUser()
-{
-	return _usr;
-}
-
+// getters
 bool	Channel::getTopicMode()
 {
 	return _topicOp;
@@ -82,20 +63,21 @@ bool	Channel::getInviteMode()
 
 int	Channel::getLimit()
 {
-	return _coutLimit;
+	return _countLimit;
 }
 
 std::string	Channel::getUsers()
 {
-	std::string	users;
+	std::string	allMembers;
 
 	for (std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
 	{
-		users += (*it)->getNickname() + "@" + (*it)->getHost() + " ";
+		allMembers += (*it)->getNickname() + "@" + (*it)->getHost() + " ";
 	}
-	return users;
+	return allMembers;
 }
 
+// setters
 void	Channel::setTopic(std::string topic, Client *client)
 {
 	if (_topicOp && (!Op(client)))
@@ -115,14 +97,14 @@ void	Channel::setLimit(bool mode, int limit)
 	_isLimitSet = mode;
 
 	if (mode)
-		_coutLimit = limit;
+		_countLimit = limit;
 	else
-		_coutLimit = -1;
+		_countLimit = -1;
 	
-	std::cout << "Limit = " << _coutLimit << std::endl;
+	std::cout << "Limit = " << _countLimit << std::endl;
 }
 
-bool	Channel::setOp(bool mode, std::string username)
+bool	Channel::setOperator(bool mode, std::string username)
 {
 	for(std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
 	{
@@ -145,7 +127,7 @@ void	Channel::setPassMode(bool mode)
 	_isPassSet = mode;
 }
 
-void	Channel::setChanPass(std::string password)
+void	Channel::setChannelPassword(std::string password)
 {
 	_password = password;
 }
@@ -161,7 +143,7 @@ void	Channel::addUser(Client *client)
 	return;
 }
 
-void Channel::addGuest(Client *client)
+void	Channel::addGuest(Client *client)
 {
 	_guest.push_back(client);
 	return;
@@ -179,6 +161,27 @@ void	Channel::eraseUser(Client *client, int fd)
 		}
 	}
 }
+/*
+bool	Channel::fdIsInvited(int fdc)
+{
+	for (std::vector<int>::iterator	it = _invite.begin(); it != _invite.end(); it++)
+	{
+		if ((*it) == fdc)
+			return (true);
+	}
+    return (false);
+}
+
+bool	Channel::fdIsBanned(int fdc)
+{
+	for (std::vector<int>::iterator	it = _banned.begin(); it != _banned.end(); it++)
+	{
+		if ((*it) == fdc)
+			return (true);
+	}
+    return (false);
+}
+*/
 
 bool	Channel::User(Client *client)
 {
@@ -249,7 +252,7 @@ bool	Channel::eraseOp(Client *client)
 		{
 			if (client->getFD() == (*itc)->getFD())
 			{
-				std::cout << "Operator has been removed:" + (*itc)->getNickname() << std::endl;
+				std::cout << "Operator has removed:" + (*itc)->getNickname() << std::endl;
 				_op.erase(itc);
 				return (true);
 			}
@@ -257,6 +260,7 @@ bool	Channel::eraseOp(Client *client)
 	}
 	std::cout << "Not a member: " + client->getNickname() << std::endl;
 	return (false);
+
 }
 
 bool	Channel::Op(Client *client)
@@ -279,7 +283,7 @@ bool	Channel::isNumber(std::string arg)
 	return true;
 }
 
-bool		Channel::nickMember(std::string nickname)
+bool	Channel::nickMember(std::string nickname)
 {
 	for (std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
 	{
