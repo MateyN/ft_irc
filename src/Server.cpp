@@ -13,7 +13,8 @@ Server::Server(const Server &src)
 	*this = src;
 }
 
-Server	&Server::operator=(const Server &rhs)
+// Copy assignment operator
+Server& Server::operator=(const Server &rhs)
 {
 	token = rhs.token;
 	cmd = rhs.cmd;
@@ -239,7 +240,7 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::cout << YELLOW << "Received : " << line << RESET << std::endl;
+		std::cout << YELLOW << "Received -> " << line << RESET << std::endl;
 		if (!line.empty())
 		{
 			parseCmd(line);
@@ -264,11 +265,11 @@ Channel* Server::addChan(std::string name)
 	return channel;
 }
 
-void	Server::chanErase(Channel *channel)
+void	Server::chanErase(Channel *chan)
 {
 	for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
 	{
-		if (channel->getChanName() == (*it)->getChanName())
+		if (chan->getChanName() == (*it)->getChanName())
 		{
 			_chan.erase(it);
 			break;

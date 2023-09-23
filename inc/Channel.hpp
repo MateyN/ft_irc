@@ -32,9 +32,9 @@ class Channel
 			void						setTopicMode(bool mode);
 			void						setPassMode(bool mode);
 			void						setInviteMode(bool mode);
-			void						setChannelPassword(std::string password);
+			void						setChanPass(std::string password);
 			void						setLimit(bool mode, int limit);
-			bool						setOperator(bool mode, std::string username);
+			bool						setOp(bool mode, std::string username);
 
 			void						addUser(Client *client);
 			void						addGuest(Client *client);

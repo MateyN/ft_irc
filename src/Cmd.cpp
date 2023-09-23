@@ -136,6 +136,7 @@ void	Server::JOIN(Client *client, Channel *channel)
 {
 	(void)channel;
 	std::cout << GREEN << "COMMAND JOIN" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
 
 	bool						isChannelFound = false;
 	std::string					channelName;

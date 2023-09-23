@@ -62,7 +62,7 @@ class Server
 		//void        Sockets(); // maybe won't need that
 		Client*		addClient(int fd);
 		Channel* 	addChan(std::string name);
-		void		chanErase(Channel *channel);
+		void		chanErase(Channel *chan);
 		bool		chanExist(std::string channel);
 		bool		nickExist(std::string nick);
 		void		processRecvData(std::string buf, Client *client, Channel *channel);

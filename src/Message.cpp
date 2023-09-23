@@ -4,7 +4,7 @@
 
 void	Server::msgSend(std::string msg, int fd)
 {
-	std::cout << BLUE << "Send: " << msg.append(CRLF) << RESET << std::endl;
+	std::cout << CYAN << "Send -> " << RESET << msg.append(CRLF) << std::endl;
  	send(fd, msg.c_str(), msg.size(), 0);
 }
 
@@ -112,6 +112,6 @@ void Server::errorMsg(int errCode, int fd, std::string str1, std::string str2, s
 
 void    Server::welcomeMsg(Client *client)
 {
-	std::string	msg = "001 " + client->getNickname() + " :" + "\033[1;32mWelcome " + client->getNickname() + " @" + client->getHost() + CRLF + RESET;
+	std::string	msg = "001 " + client->getNickname() + " : " + "\033[1;32mWelcome -> " + client->getNickname() + " @" + client->getHost() + CRLF + RESET;
 	msgSend(msg, client->getFD());
 }

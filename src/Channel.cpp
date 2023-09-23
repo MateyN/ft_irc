@@ -104,7 +104,7 @@ void	Channel::setLimit(bool mode, int limit)
 	std::cout << "Limit = " << _countLimit << std::endl;
 }
 
-bool	Channel::setOperator(bool mode, std::string username)
+bool	Channel::setOp(bool mode, std::string username)
 {
 	for(std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
 	{
@@ -127,7 +127,7 @@ void	Channel::setPassMode(bool mode)
 	_isPassSet = mode;
 }
 
-void	Channel::setChannelPassword(std::string password)
+void	Channel::setChanPass(std::string password)
 {
 	_password = password;
 }
@@ -222,14 +222,14 @@ bool	Channel::addOp(Client *client)
 		{
 			if (client->getFD() == (*itc)->getFD())
 			{
-				std::cout << "Already an operator:" + (*itc)->getNickname() << std::endl;
+				std::cout << "Already an operator -> " + (*itc)->getNickname() << std::endl;
 				return (false);
 			}
 		}
 		_op.push_back(client);
 		return (true);
 	}
-	std::cout << "Not a member: " + client->getNickname() << std::endl;
+	std::cout << "Not a member -> " + client->getNickname() << std::endl;
 	return (false);
 }
 
@@ -252,13 +252,13 @@ bool	Channel::eraseOp(Client *client)
 		{
 			if (client->getFD() == (*itc)->getFD())
 			{
-				std::cout << "Operator has removed:" + (*itc)->getNickname() << std::endl;
+				std::cout << "The operator has removed -> " + (*itc)->getNickname() << std::endl;
 				_op.erase(itc);
 				return (true);
 			}
 		}
 	}
-	std::cout << "Not a member: " + client->getNickname() << std::endl;
+	std::cout << "Not a member -> " + client->getNickname() << std::endl;
 	return (false);
 
 }
