@@ -5,7 +5,8 @@ SRCS			=	main.cpp			\
 					Server.cpp			\
 					Client.cpp			\
 					Channel.cpp			\
-					Cmd.cpp
+					Cmd.cpp				\
+					Message.cpp
 
 OBJ_DIR			= 	obj/
 OBJS			=	$(addprefix $(OBJ_DIR), $(SRCS:.cpp=.opp))
