@@ -315,15 +315,15 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 		"PART",
 		"PRIVMSG", // receive PM
 		// operators
-		/* "KICK", */
-		/* "MODE", */
-		/* "OPER", */
-		/* "INVITE", */
-		/* "TOPIC", */
-		/* // */ 
-		/* "PING", */
-		/* "QUIT", */
-		/* "KILL" 
+		//"KICK", 
+		// "MODE", 
+		// "OPER",
+		// "INVITE",
+		// "TOPIC", 
+		// //  
+		// "PING", 
+		// "QUIT", 
+		// "KILL" 
 	};
 
 	int	idx = 0;
@@ -341,13 +341,13 @@ void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::st
 		case 4: cmdPart(client, params); break;
 		case 5: cmdMsg(client, params); break;
 		case 6: cmdKick(client, params); break;
-		/* case 11: cmdInvite(void); break; */
-		/* case 12: cmdTopic(*this, client, params); break; */
-		/* case 6: cmdMode(*this, client, params); break; */
-		/* case 9: cmdOper(*this, client, params); break; */
-		/* case 13: cmdPing(client); break; */
-		/* case 14: cmdQuit(client); break; */
-    	/* case 15: cmdKill(*this, client, params); break;
+		// case 11: cmdInvite(void); break; 
+		//case 12: cmdTopic(*this, client, params); break; 
+		// case 6: cmdMode(*this, client, params); break; 
+		// case 9: cmdOper(*this, client, params); break; 
+		// case 13: cmdPing(client); break; 
+		// case 14: cmdQuit(client); break; 
+    	// case 15: cmdKill(*this, client, params); break;
 	}
 }
 
@@ -571,12 +571,12 @@ bool	Server::cmdJoin(Client &client, std::vector<std::string> &params)
 			send(fdc, msg.c_str(), msg.length(), 0);
 			msg = MSG(client.getNickname(), client.getUser(), "JOIN", chanName);
 			sendToUsersInChan(*channel, client, msg);
-			/* std::vector<Client *> users = channel->getUsr(); */
-			/* for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++) */
-			/* { */
-			/* 	if ((*u_it)->getNickname() != client.getNickname()) */
-			/* 		send((*u_it).getFD(), TOSTR(MSG(client.getNickname(), client.getUser() "JOIN", chanName)); */
-			/* }
+			// std::vector<Client *> users = channel->getUsr(); 
+			// for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++) 
+			// { 
+			// 	if ((*u_it)->getNickname() != client.getNickname()) 
+			// 		send((*u_it).getFD(), TOSTR(MSG(client.getNickname(), client.getUser() "JOIN", chanName)); 
+			// }
 			if (!channel->getTopic().empty())
 			{
 				msg = RPL332_TOPIC(client.getNickname(), chanName, channel->getTopic());
@@ -694,10 +694,10 @@ bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
 }
 
 // KR : when to use CAP ?
-/* bool	Server::cmdCAP(void) */
-/* { */
-/* 	std::cout << "Server: Execute cmdCAP" << std::endl; */
-/* } 
+// bool	Server::cmdCAP(void) 
+// { 
+// 	std::cout << "Server: Execute cmdCAP" << std::endl; 
+// } 
 
 bool	Server::cmdKick(Client &client, std::vector<std::string> &params)
 {
