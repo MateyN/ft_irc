@@ -195,12 +195,12 @@ bool	Channel::User(Client *client)
 
 bool	Channel::userExist(const std::string& nickname)
 {
-    for (std::vector<Client *>::iterator usr = _usr.begin(); usr != _usr.end(); usr++)
-    {
-        if ((*usr)->getFD() == client->getFD())
-        return true;
-    }
-    return false;
+	for (std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
+	{
+		if ((*it)->getNickname() == nickname)
+			return true;
+	}
+	return false;
 }
 
 bool	Channel::addOp(Client *client)
@@ -285,13 +285,12 @@ bool	Channel::isNumber(std::string arg)
 
 bool	Channel::nickMember(std::string nickname)
 {
-    (void) client; // unused for now
-    for (std::vector<Client *>::iterator op = _op.begin(); op != _op.end(); op++)
-    {
-        if ((*op)->getFD() == client->getFD())
-        return true;
-    }
-    return false;
+	for (std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
+	{
+		if ((*it)->getNickname() == nickname)
+			return true;
+	}
+	return false;
 }
 
 

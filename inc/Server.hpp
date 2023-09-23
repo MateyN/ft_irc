@@ -1,17 +1,23 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-//# define	PORT_MIN 1024
-//# define	PORT_MAX 65535
-# define    ERRNOMSG "Error: "
-# define    ERROR -1
-# define	MAX_CLIENTS 10		// backlog
-
-#include "Client.hpp"
-#include "Channel.hpp"
-#include <iostream>
-#include <string>
-#include <stdexcept>
+# include <iostream>
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <unistd.h>
+# include <cerrno>
+# include <stdexcept>
+# include <vector>
+# include <map>
+# include <fcntl.h>
+# include <sys/poll.h>
+# include <string>
+# include <cstring>
+# include <sstream>
+# include <algorithm>
+# include <poll.h>
+# include <cstdlib>
 #include <sstream>
 
 # include "Client.hpp"
@@ -90,33 +96,6 @@ class Server
 			private:
 				const char* _msg;
 		};
-
-        bool        setNick;
-        bool        validPass;
-
-        bool        serverConnect();
-        bool        setupServerSocket();
-        //void        Sockets(); // maybe won't need that
-
-        int         getSocket();
-        int         getPort();
-        void        setPort(int port);
-        
-        void        initServSocket();
-        void        newClientConnect();
-        void        clientData(pollfd &pfdc);
-        void        processRecvData(int send, char *data, int size);
-        void        clientDisc(int pfdc);
-        void        clientsErase(Client *client);
-        void        chanErase(Channel *chan);
-
-        std::string token;
-        std::string cmd;
-        std::string getPass();
-        void        setPass(std::string pass);
-
-        Client*     addClient(int fd);
-        Channel*    addChan(std::string name);
 
 	private:
 				// server.cpp

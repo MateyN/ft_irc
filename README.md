@@ -2,27 +2,27 @@
 
 # TODO
 
-- [ ] subject requirements :
-	- [ ] C++ 98
-	- [ ] do not develop a client
-	- [ ] do not handle communication server-server
-	- [ ] ./ircserv <port> <password>
+- [o] subject requirements :
+	- [X] C++ 98
+	- [X] do not develop a client
+	- [X] do not handle communication server-server
+	- [X] ./ircserv <port> <password>
 	- [ ] poll() OR select() OR kqueue() OR epoll()
 	- [ ] simultaneously handle multiple clients without blocking ([non-blocking tcp tuto](https://bousk.developpez.com/cours/reseau-c++/TCP/06-client-non-bloquant/))
-	- [ ] no fork
+	- [X] no fork
 	- [ ] only ONE poll() to handle read(), write(), listen(), etc.
 	- [ ] do not use read/recv or write/send with any FD without using poll()
-	- [ ] choose one of the multiple client IRC as a reference ([irssi](https://irssi.org/)), but your reference client will be used during the assessment
+	- [X] choose one of the multiple client IRC as a reference ([irssi](https://irssi.org/)), but your reference client will be used during the assessment
 	- [ ] the reference client must connect to server without errors
 	- [ ] client-server communication is TCP/IP (v4 or v6)
 	- [ ] reference client must have those functionalities :
 		- [ ] authentification
-		- [ ] define nickname
-		- [ ] define username
-		- [ ] join channel
-		- [ ] send private message (PM)
-		- [ ] receive PM
-		- [ ] all sent messages in a channel must be transmitted to all clients who joined this specific channel
+		- [ ] define nickname TO TEST
+		- [ ] define username TO TEST
+		- [ ] join channel TO TEST
+		- [ ] send private message (PM) TO TEST
+		- [ ] receive PM TO TEST
+		- [ ] all sent messages in a channel must be transmitted to all clients who joined this specific channel TO TEST
 		- [ ] we must have operators and basic users
 		- [ ] implement specific commands to channel operators :
 			- [ ] KICK : kick client from chan
@@ -64,7 +64,7 @@
 - [Socket](https://www.tutorialspoint.com/unix_sockets/what_is_socket.htm)
 	- Allow communication bw two processes on the same or different machines : a way to talk to other computers using std Unix file descriptors.
 - [RFC1459 (Oikarinen & Reed, 1993)](https://datatracker.ietf.org/doc/html/rfc1459)
-	- [ ] Client have a unique nickname having a max(9) char
+	- [X] Client have a unique nickname having a max(9) char
 	- [ ] All servers must have : real name of the host that the cleint is running on, the username of the client on that host, and the server to whih the client is connected
 	- Operators (special class of clients) perform general maintenance functions on the network
 	- [ ] Channel is created implicitly when the first client joins it (and becomes the operator, named 'chop' | 'chanop') and ceases to exist when the last client leaves it
@@ -79,13 +79,19 @@
 - [RFC2810 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2810)
 - [RFC2811 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2811)
 - [RFC2812 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2812)
+	- Labels :
+		- [ ] when connecting, client unique id and the server which introduced the client
+		- [ ] allow operators who can :
+			- [ ] disconnect and reconnect servers (see if applicable)
+			- [ ] remove a user from server (KILL?)
+		- [ ] channels begin with #, case insensitive
 - [RFC2813 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2813)
+- [UChicago X-Projects Tutorial](http://chi.cs.uchicago.edu/chirc/irc.html)
 - [How to make an IRC server connection (Sotiriou, 2008)](https://oramind.com/tutorial-how-to-make-an-irc-server-connection/)
 - [Beej's Guide to Network Programming (Hall, 2023)](https://beej.us/guide/bgnet/html/)
 - [IRCgod](https://ircgod.com/posts/)
 - [Socket Programming in C/C++ (GG)](https://www.geeksforgeeks.org/socket-programming-cc/)
 - [Socket Programming In C++:A Beginner's Guide](https://marketsplash.com/tutorials/cpp/cplusplus-scoket/)
-- [UChicago X-Projects](http://chi.cs.uchicago.edu/chirc/irc_examples.html)
 - [Modern IRC Client Protocol (Allnutt, Oaks & Lorentz, WIP)](https://modern.ircdocs.horse/)
 	- [Capability negociation](https://modern.ircdocs.horse/#capability-negotiation) :
 		-  

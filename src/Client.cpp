@@ -2,10 +2,11 @@
 
 Client::Client(): _fd(0), _connect(false)
 {
-    _username = "";
-    _nick = "";
-    _setNick = false;
-    _isRegister = false;
+	_username = "";
+	_nick = "";
+	_hostname = "";
+	_isRegister = false;
+	_setNick = false;
 }
 
 Client::Client(int fd):	_setNick(false), _fd(fd), _connect(false)
@@ -20,19 +21,20 @@ Client::Client(const Client &src)
 
 Client	&Client::operator=(const Client &rhs)
 {
-    _setNick = rhs._setNick;
-    _fd = rhs._fd;
-    _connect = rhs._connect;
-    _nick = rhs._nick;
-    _username = rhs._username;
-    _isRegister = rhs._isRegister;
+	_setNick = rhs._setNick;
+	_fd = rhs._fd;
+	_nick = rhs._nick;
+	_username = rhs._username;
+	_connect = rhs._connect;
+	_hostname = rhs._hostname;
+	_isRegister = rhs._isRegister;
 
 	return *this;
 }
 
 Client::~Client()
 {
-    //std::cout << "Des ctor Client Called" << std::endl;
+    //std::cout << "Destructor Client Called" << std::endl;
 	//return;
 }
 
@@ -85,3 +87,27 @@ bool	Client::isConnect()
 {
 	return _connect;
 }
+/*
+void 	Client::joinChannel(Channel *channel)
+{
+	channel->addUser(this);
+	this->_channels.insert(std::pair<std::string, Channel *>(channel->getChanName(), channel));
+}
+
+void 	Client::leaveChannel(Channel &channel)
+{
+	channel.eraseUser(this, this->getFD());
+	_channels.erase(channel.getChanName());
+	send(this->getFD(), MSG(_nick, _username, "PART", channel.getChanName()).c_str(), MSG(_nick, _username, "PART", channel.getChanName()).length(), 0);
+}
+
+bool	Client::inChannel(const std::string& channel_name)
+{
+	std::map<std::string, Channel *> &channels = this->getChannels();
+
+	std::map<std::string, Channel *>::iterator it = channels.find(channel_name);
+	if (it == channels.end())
+		return false;
+	return true;
+}
+*/

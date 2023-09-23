@@ -32,23 +32,24 @@ class Client
 		void		setUser(std::string user);
 		std::string	getUser();
 
-        int         getFD()const;
-        std::string getUser();
-        std::string getNickname();
+		std::string	getHost();
+		bool isRegister();
+		void setIsRegister(bool registered);
 
 		//void 		joinChannel(Channel *channel);
 		//void 		leaveChannel(Channel &channel);
 		//bool		inChannel(const std::string& channel_name);
 
 
-    private:
-        int         _fd;
-        
-        std::string _nick;
-        std::string _username;
+	private:
+		int			_fd;
+		std::string	_nick;
+		std::string	_username;
+		std::string _hostname;
+		bool		_isRegister;
+		bool		_connect;
 
-        bool        _isRegister;
-        bool        _connect;
+		//std::map<std::string, Channel *>	_channels;
 };
 
 #endif
