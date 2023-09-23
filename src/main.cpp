@@ -37,14 +37,13 @@ int main(int ac, char *av[])
 	handler(ac, av);
 	try
 	{
-		Server				srv;
-		Client				cl;
+		Server	server;
+		Client	client;
 
-		srv.setPort(atoi(av[1]));
-		srv.setupServerSocket();
-		srv.setPass(av[2]);
-		//srv.allSockets();
-		srv.serverConnect();
+		server.setPort(atoi(av[1]));
+		server.setupServerSocket();
+		server.setPass(av[2]);
+		server.serverConnect();
 		return 0;
 	}
 	catch(const std::exception& e)
