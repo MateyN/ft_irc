@@ -2,7 +2,6 @@
 # define CLIENT_HPP
 
 //#include "Server.hpp"
-//#include "Channel.hpp"
 # include <iostream>
 # include <sys/socket.h>
 # include <netinet/in.h>
@@ -16,34 +15,37 @@
 
 class Client
 {
-    public:
-        Client();
-        Client(int fd);
-        Client(const Client& src);
-        Client &operator=(const Client& rhs);
-        ~Client();
+	public:
+		Client();
+		Client(int fd);
+		Client(const Client &src);
+		Client	&operator=(const Client &rhs);
+		~Client();
 
-        bool        _setNick;
-        bool        isRegister();
+		bool		_setNick;
+
+		int			getFD()const;
+		std::string	getNickname();
+		//std::map<std::string, Channel *>& 	getChannels() { return _channels; }
+		void		setNickname(std::string nick);
+		bool		isConnect();
+		void		setUser(std::string user);
+		std::string	getUser();
 
         int         getFD()const;
-
-        std::string getHost();
         std::string getUser();
         std::string getNickname();
 
-        void        setNickname(std::string nickname);
-        void        setIsRegister(bool registered);
-        void        setUser(std::string user);
+		//void 		joinChannel(Channel *channel);
+		//void 		leaveChannel(Channel &channel);
+		//bool		inChannel(const std::string& channel_name);
 
-        bool        isConnect();
 
     private:
         int         _fd;
         
         std::string _nick;
         std::string _username;
-        std::string _hostname;
 
         bool        _isRegister;
         bool        _connect;
