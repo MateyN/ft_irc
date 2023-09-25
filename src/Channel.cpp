@@ -161,7 +161,7 @@ void	Channel::eraseUser(Client *client, int fd)
 		}
 	}
 }
-/*
+
 bool	Channel::fdIsInvited(int fdc)
 {
 	for (std::vector<int>::iterator	it = _invite.begin(); it != _invite.end(); it++)
@@ -181,7 +181,6 @@ bool	Channel::fdIsBanned(int fdc)
 	}
     return (false);
 }
-*/
 
 bool	Channel::User(Client *client)
 {

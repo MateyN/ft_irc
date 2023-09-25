@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[7] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT"};
+	std::string valid_commands[7] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -15,7 +15,9 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::USER,
 		&Server::JOIN,
 		&Server::PASS,
-		&Server::QUIT
+		&Server::QUIT,
+		//&Server::KICK
+		//&Server::PART
 	};
 	for (int i = 0; i < 7; i++)
 	{
@@ -27,13 +29,16 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 	}
 }
 
-void	Server::CAP(Client *client, Channel *channel)
+void Server::CAP(Client *client, Channel *channel)
 {
-	(void)channel;
-	if (cmd[0] == 'L' && cmd[1] == 'S')
-		msgSend("CAP * LS :", client->getFD());
-	else
-		return;
+    (void)channel;
+    // Simulate sending a list of supported capabilities
+    std::string capList = "multi-prefix";
+    // Send the capabilities list to the client
+    std::string clientResponse = "CAP * LS :" + capList;
+    msgSend(clientResponse, client->getFD());
+    // Log the capabilities for debugging (you can adjust the logging as needed)
+    std::cout << "Server sent CAP LS response to client: " << clientResponse << std::endl;
 }
 
 void	Server::PING(Client *client, Channel *channel)
@@ -52,7 +57,6 @@ void 	Server::NICK(Client *client, Channel *channel)
 	{
 		return;
 	}
-
 	if (client->_setNick == false)
 	{
 		std::string nickname = cmd;
@@ -257,7 +261,8 @@ void	Server::PASS(Client *client, Channel *channel)
 		errorMsg(ERR464_PASSWDMISMATCH, client->getFD(),"", "", "", "");
 		return ;
 	}
-	else {
+	else
+	{
 		if (client->isRegister() == true)
 		{
 			errorMsg(ERR462_ALREADYREGISTERED, client->getFD(),"", "", "", "");
@@ -297,6 +302,79 @@ void Server::QUIT(Client *client, Channel *channel)
 			break;
 		}
 	}
+}
+
+/*
+bool Server::PART(Client &client, std::vector<std::string> &params)
+{
+	(void)params; // delete when use params
+	std::string chanName = ""; //change to appropriate params[i]
+	std::cout << "Server: Execute cmdPart" << std::endl;
+	int			fdc = client.getFD();
+	std::string	msg;
+	// err:461, need more params
+	if (chanName.length() <= 0)
+	{
+		errorMsg(ERR461_NEEDMOREPARAMS, clients->getFD(), clients->getNickname(), "", "", "");
+		return (false);
+	}
+	// err:403, no such channel
+	if (findChannel(chanName) == _chan.end())
+	{
+		errorMsg(ERR403_NOSUCHCHANNEL, clients->getFD(), clients->getNickname(), chanName, "", "");
+		return (false);
+	}
+	// err:442, not on channel
+	if (findClientChannel(client.getNickname(), *channels) == channels->getUser().end())
+	{
+		errorMsg(ERR442_NOTONCHANNEL, clients->getFD(), channels->getChanName(), "", "", "");
+		return (false);
+	}
+	Channel *channel = *findChannel(chanName); // NOT SURE : UNDEFINED BEHAVIOR
+	client.leaveChannel(*channel);
+	if (channel->getUser().size() == 0) // if no more user, delete chan
+	{
+		delete channel;
+		this->_chan.erase(findChannel(chanName));
+	}
+	else // send part to all users
+	{
+		sendToUsersInChan(msg, clients->getFD());
+		return (true);
+	}
+	return (false);
+// output when PART:
+// 1. no params leads to 461 PART
+// 2. no such channel leads to 403
+// 3. user not on channel leads to 442
+// 4. when last usr, check if channel is deleted
+// 5. see if all users receive the msg PART
+}
+*/
+std::vector<Channel*>::iterator Server::findChannel(const std::string &chan)
+{
+    for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
+    {
+        if (!chan.empty() && chan == (*it)->getChanName())
+        {
+            return it;
+        }
+    }
+    return _chan.end();
+}
+
+
+std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nick, Channel &channel)
+{
+	std::vector<Client *>	usrList = channel.getUser();
+	std::vector<Client *>::iterator it = usrList.begin();
+	while (it != usrList.end())
+	{
+		if (!nick.empty() && nick == ((*it))->getNickname())
+			return (it);
+		it++;
+	}
+	return (it);
 }
 
 /*
@@ -475,16 +553,6 @@ bool	Server::cmdUser(Client &client, std::string user)
 // 3. normal behavior set user
 }
 
-void	Server::sendToUsersInChan(Channel &channel, Client &client, std::string msg)
-{
-	std::vector<Client *> users = channel.getUsr();
-	for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++)
-	{
-		if ((*u_it)->getNickname() != client.getNickname())
-			send((*u_it)->getFD(), msg.c_str(), msg.length(), 0);
-	}
-}
-
 void	Server::cmdJoinNames(Client &client, Channel &channel)
 {
 	int			fdc = client.getFD();
@@ -598,56 +666,6 @@ bool	Server::cmdJoin(Client &client, std::vector<std::string> &params)
 // 8. normal behavior with all names
 }
 
-bool	Server::cmdPart(Client &client, std::vector<std::string> &params)
-{
-	(void)params; // delete when use params
-	std::string chanName = ""; //change to appropriate params[i]
-	std::cout << "Server: Execute cmdPart" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:461, need more params
-	if (chanName.length() <= 0)
-	{
-		msg = ERR461_NEEDMOREPARAMS("PART");
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// err:403, no such channel
-	if (findChannel(chanName) == _chan.end())
-	{
-		msg = ERR403_NOSUCHCHANNEL(chanName);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// err:442, not on channel
-	if (findClientChannel(client.getNickname(), *channel) == channel->getUsr().end())
-	{
-		msg = ERR442_NOTONCHANNEL(chanName);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	Channel *channel = *findChannel(chanName); // NOT SURE : UNDEFINED BEHAVIOR
-	client.leaveChannel(*channel);
-	if (channel->getUsr().size() == 0) // if no more user, delete chan
-	{
-		delete channel;
-		this->_chan.erase(findChannel(chanName));
-	}
-	else // send part to all users
-	{
-		msg = MSG(client.getNickname(), client.getUser(), "PART", chanName);
-		sendToUsersInChan(*channel, client, msg);
-		return (true);
-	}
-	return (false);
-// output when PART:
-// 1. no params leads to 461 PART
-// 2. no such channel leads to 403
-// 3. user not on channel leads to 442
-// 4. when last usr, check if channel is deleted
-// 5. see if all users receive the msg PART
-}
-
 bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
 {
 //input:
@@ -698,36 +716,6 @@ bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
 // { 
 // 	std::cout << "Server: Execute cmdCAP" << std::endl; 
 // } 
-
-bool	Server::cmdKick(Client &client, std::vector<std::string> &params)
-{
-//input:
-//params : channnel(begining by #) target
-	(void)params;
-	std::cout << "Server: Execute cmdKick" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:461, need more params
-	if (params.size() < 2)
-	{
-		msg = ERR461_NEEDMOREPARAMS("KICK");
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	else if (params[0][0] != '#' || findChannel() == _chan.end())
-	{
-		msg = ERR403_NOSUCHCHANNEL(chanName);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// ERR441_USERNOTINCHANNEL(nick, chanName) // for client when nick is not on channel
-	// ERR442_NOTONCHNNEL(chanName) // when client is not user on channel
-	Channel *channel = *findChannel(param[0]);
-    channel->eraseUser(client, fdc);
-	msg = MSG(client.getNickname(), client.getUser(), "KICK", "You have been kicked from channel :" + param[0]);
-	send(fdc, msg.c_str(), msg.length(), 0);
-	return (true);
-}
 
 bool	Server::cmdMode(Client &client, std::vector<std::string> &params)
 {

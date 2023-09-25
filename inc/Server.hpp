@@ -29,6 +29,7 @@
 # define ERROR -1
 # define MAX_CLIENTS 32		// backlog
 # define CRLF "\r\n"
+# define TOSTR(a) static_cast<std::string>(a)
 # define RESET   "\033[0m"
 # define BLACK   "\033[30m"      /* Black */
 # define RED     "\033[31m"      /* Red */
@@ -81,6 +82,8 @@ class Server
 		void		sendToUsersInChan(std::string msg, int fd);
 		void		welcomeMsg(Client *client);
 		void 		errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
+		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
+		std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
 	
 		void		callCmd(std::string cmd, Client *client, Channel *channel);
 
@@ -118,6 +121,9 @@ class Server
 		void					JOIN(Client *client, Channel *channel);
 		void					PASS(Client *client, Channel *channel);
 		void					QUIT(Client *client, Channel *channel);
+		bool					KICK(Client *client, Channel *channel,  std::vector<std::string> &params);
+		//bool					PART(Client &client, std::vector<std::string> &params);
+		
 };
 
 #endif

@@ -161,10 +161,10 @@ bool	Server::serverConnect()
 						}
 					}
 					int	send = _pfds[i].fd;
-					msg[send] += static_cast<std::string>(buf);
+					msg[send] += TOSTR(buf);
 					std::string	completeMsg = msg[send].substr(0, msg[send].find(CRLF));
 					channels = getChan(completeMsg);
-					if (static_cast<std::string>(buf).find("\n") != std::string::npos)
+					if (TOSTR(buf).find("\n") != std::string::npos)
 					{
 						processRecvData(msg[send], clients, channels);
 						msg[send].clear();
