@@ -121,7 +121,7 @@ class Server
 		void					JOIN(Client *client, Channel *channel);
 		void					PASS(Client *client, Channel *channel);
 		void					QUIT(Client *client, Channel *channel);
-		bool					KICK(Client *client, Channel *channel,  std::vector<std::string> &params);
+		//bool					KICK(Client *client, Channel *channel);
 		//bool					PART(Client &client, std::vector<std::string> &params);
 		
 };
