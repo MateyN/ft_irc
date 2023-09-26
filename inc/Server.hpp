@@ -76,16 +76,26 @@ class Server
 		void		setPass(std::string pass);
 		Channel*	getChan(std::string msgBuf);
 
-		void		parseCmd(std::string buf);
-		std::string	parseChannel(std::string buf, size_t pos);
-		void		msgSend(std::string msg, int fd);
-		void		sendToUsersInChan(std::string msg, int fd);
-		void		welcomeMsg(Client *client);
-		void 		errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
+		void						parseCmd(std::string buf);
+		std::string					parseChannel(std::string buf, size_t pos);
+		void						msgSend(std::string msg, int fd);
+		void						sendToUsersInChan(std::string msg, int fd);
+		void						welcomeMsg(Client *client);
+		void 						errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
 		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
-		std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
-	
-		void		callCmd(std::string cmd, Client *client, Channel *channel);
+		//std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
+		void						handleNickSize(Client *client, const std::string &newNick);
+		void						handleNicknameChange(Client *client, const std::string &newNick);
+		bool						isNicknameInUse(const std::string &nickname);
+		bool						isNickValid(const std::string &nickname);
+		void						setNewNick(Client *client, const std::string &newNick);
+		std::vector<std::string>	splitChannels(const std::string &channelList);
+		Channel* 					findOrCreateChannel(const std::string &channelName);
+		bool						canJoinChannel(Client *client, Channel *channel, const std::string &pass);
+		void						parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass);
+		//void						handleNoSuchChannelError(Client *client);
+		void						cleanupClients(Client *client, Channel *channel);
+		void						callCmd(std::string cmd, Client *client, Channel *channel);
 
 		class ExceptionServer : public std::exception
 		{
@@ -111,7 +121,7 @@ class Server
 		std::vector<Client*>	_cli;
 		std::vector<Channel*>	_chan;
 		std::string				_password;
-		std::string 			valid_commands[7];
+		std::string 			valid_commands[8];
 
 				// cmd.cpp
 		void					CAP(Client *client, Channel *channel);
@@ -122,7 +132,7 @@ class Server
 		void					PASS(Client *client, Channel *channel);
 		void					QUIT(Client *client, Channel *channel);
 		//bool					KICK(Client *client, Channel *channel);
-		//bool					PART(Client &client, std::vector<std::string> &params);
+		void					PART(Client *client, Channel *channel);
 		
 };
 

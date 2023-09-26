@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[7] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT" };
+	std::string valid_commands[8] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT", "PART"};
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -16,10 +16,9 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::JOIN,
 		&Server::PASS,
 		&Server::QUIT,
-		//&Server::KICK
-		//&Server::PART
+		&Server::PART
 	};
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < 8; i++)
 	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
@@ -50,70 +49,94 @@ void	Server::PING(Client *client, Channel *channel)
 	msgSend(clientResponse, client->getFD());
 }
 
-void 	Server::NICK(Client *client, Channel *channel)
+void Server::NICK(Client *client, Channel *channel)
 {
-	(void)channel;
-	if (client->isRegister() == false)
+	std::cout << GREEN << "COMMAND NICK" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
+
+    (void)channel;
+
+    if (!client->isRegister())
 	{
-		return;
-	}
-	if (client->_setNick == false)
+        return;
+    }
+    std::string newNick = cmd;
+    if (client->_setNick)
 	{
-		std::string nickname = cmd;
-		int nick = client->getFD();
-		std::stringstream ss;
-		ss << nick;
-		std::string strNick = ss.str();
-		nickname += strNick;
-		client->setNickname(nickname);
-		std::string msg = ":" + cmd + " NICK " + nickname;
-		msgSend(msg, client->getFD());
-		client->_setNick = true;
-	}
-	else 
+        handleNicknameChange(client, newNick);
+    } 
+	else
 	{
-		std::string newNick = cmd;
-		if(newNick.size() > 25)
-		{
-		errorMsg(ERR432_ERRONEUSNICKNAME, client->getFD(), newNick, "", "", "");
-		std::cerr << "Error: Nickname is longer than 25 characters." << std::endl;
-		return;
-	}
-	for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
-	{
-		if ((*it)->getNickname() == newNick)
-		{
-			errorMsg(ERR433_NICKNAMEINUSE, client->getFD(), newNick, "", "", "");
-			return;
-		}
-	}
-	if (newNick.empty() || newNick[0] == '#' || newNick[0] == ':' || newNick.find_first_of("&#") != std::string::npos || newNick.find(' ') != std::string::npos)
-	{
-		errorMsg(ERR432_ERRONEUSNICKNAME, client->getFD(), newNick, "", "", "");
-		return ;
-	}
-		for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
-		{
-			if ((*it)->getFD() == client->getFD())
-			{
-				std::string oldNick;
-				for (std::vector<Client*>::iterator iter = _cli.begin(); iter != _cli.end(); ++iter)
-				{
-					if ((*iter)->getFD() == client->getFD()) 
-					{
-						oldNick = (*iter)->getNickname();
-						break;
-					}
-				}
-				(*it)->setNickname(newNick);
-				std::string msg;
-				msg = ":" + oldNick + " NICK " + newNick;
-				msgSend(msg, client->getFD());
-				break;
-			}
-		}
-	}
+        handleNickSize(client, newNick);
+    }
 }
+
+void Server::handleNickSize(Client *client, const std::string &newNick)
+{
+    if (newNick.size() > 25)
+	{
+        errorMsg(ERR432_ERRONEUSNICKNAME, client->getFD(), newNick, "", "", "");
+        std::cerr << "Error: Nickname is longer than 25 characters." << std::endl;
+        return;
+    }
+
+    // Check for nickname availability
+    if (isNicknameInUse(newNick) || isNickValid(newNick))
+	{
+        errorMsg(ERR433_NICKNAMEINUSE, client->getFD(), newNick, "", "", "");
+        return;
+    }
+
+    // Set the nickname and send the NICK message
+    setNewNick(client, newNick);
+}
+
+void Server::handleNicknameChange(Client *client, const std::string &newNick)
+{
+    // Check if the new nickname is valid
+    if (newNick.size() > 25 || isNickValid(newNick))
+	{
+        errorMsg(ERR432_ERRONEUSNICKNAME, client->getFD(), newNick, "", "", "");
+        return;
+    }
+
+    // Check for nickname availability
+    if (isNicknameInUse(newNick))
+	{
+        errorMsg(ERR433_NICKNAMEINUSE, client->getFD(), newNick, "", "", "");
+        return;
+    }
+
+    // Set the new nickname and send the NICK message
+    setNewNick(client, newNick);
+}
+
+bool Server::isNicknameInUse(const std::string &nickname)
+{
+    for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
+    {
+        if ((*it)->getNickname() == nickname)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool Server::isNickValid(const std::string &nickname)
+{
+    return nickname.empty() || nickname[0] == '#' || nickname[0] == ':' ||
+           nickname.find_first_of("&#") != std::string::npos || nickname.find(' ') != std::string::npos;
+}
+
+void Server::setNewNick(Client *client, const std::string &newNick)
+{
+    std::string oldNick = client->getNickname();
+    client->setNickname(newNick);
+    std::string msg = ":" + oldNick + " NICK " + newNick;
+    msgSend(msg, client->getFD());
+}
+
 
 void	Server::USER(Client *client, Channel *channel)
 {
@@ -133,117 +156,128 @@ void	Server::USER(Client *client, Channel *channel)
 	}
 }
 
-void	Server::JOIN(Client *client, Channel *channel)
+void Server::JOIN(Client *client, Channel *channel)
 {
-	(void)channel;
 	std::cout << GREEN << "COMMAND JOIN" << RESET << std::endl;
 	std::cout << GREEN << "-------------" << RESET << std::endl;
+    (void)channel;
 
-	bool						isChannelFound = false;
-	std::string					channelName;
-	size_t						currPos = 0;
-	size_t						start = 0;
-	std::vector<std::string>	channelsToJoin;
-	std::string					msg;
-	std::string					pass;
+    std::vector<std::string> channelsToJoin;
+    std::string pass;
+    parseJoinCommand(cmd, channelsToJoin, pass);
 
-	if (cmd == ":")
-		return;
-	while ((start = cmd.find("#", start)) != std::string::npos)
-	{
-		channelName = parseChannel(cmd, start);
+    if (channelsToJoin.empty())
+    {
+        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "JOIN", "Not enough parameters", "");
+        return;
+    }
 
-		if (channelName[0] != '#')
-			channelName = '#' + channelName;
+    std::vector<std::string>::iterator iter;
+    for (iter = channelsToJoin.begin(); iter != channelsToJoin.end(); ++iter)
+    {
+		std::string channelName = *iter;
+        Channel *targetChannel = findOrCreateChannel(channelName);
+        if (!targetChannel)
+            return;
 
-		channelsToJoin.push_back(channelName);
+        if (!canJoinChannel(client, targetChannel, pass))
+            continue;
 
-		start = start + 1;
-	}
-	if (channelsToJoin.empty())
-	{
-		errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "JOIN", "Not enough parameters", "");
-		return;
-	}
-	if ((currPos = cmd.find(" ")) != std::string::npos)
-	{
-		if (cmd.find(":") == std::string::npos)
-			pass = cmd.substr(currPos + 1);
-	}
-	std::cout << ": [" + pass + "]" << std::endl;
-	for (std::vector<std::string>::iterator iter = channelsToJoin.begin(); iter != channelsToJoin.end(); iter++)
-	{
-		for (std::vector<Channel*>::iterator	it = _chan.begin(); it != _chan.end(); it++)
-		{
-			if (((*it)->getChanName() == (*iter)))
-			{
-				isChannelFound = true;
+        targetChannel->addUser(client);
+        targetChannel->addOp(client);
 
-				if (channel->getLimitMode())
-				{
-					if (static_cast<int>(channel->getUser().size()) >= channel->getLimit())
-					{
-						errorMsg(ERR471_CHANNELISFULL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-						return ;
-					}
-				}
-				if (channel->getPassMode())
-				{
-					if (pass != channel->getPassword())
-					{
-						errorMsg(ERR475_BADCHANNELKEY, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-						return ;
-					}
-				}
-				if (channel->getInviteMode())
-				{
-					if (channel->User(client))
-					{
-						errorMsg(ERR443_USERONCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-						return ;
-					}
-					if (!(channel->Guest(client)))
-					{
-						errorMsg(ERR473_INVITEONLYCHAN, client->getFD(), channel->getChanName(), client->getNickname(), "", "");
-						return ;
-					}
-					std::cout << "In the list." << std::endl;
-				}
-				std::cout << "Channel [" + (*iter) + "] already exists." << std::endl;
-				channels = (*it);
-				channels->addUser(client);
-				break;
-			}
-		}
-		if (!isChannelFound)
-		{
-			channels = addChan((*iter));
-			std::cout << "Channel [" + (*iter) + "] created." << std::endl;
-			channels->addUser(client);
-			channels->addOp(client);
-		}
-		currPos = cmd.find(" :");
-		if (currPos != std::string::npos && (std::string::npos + 1) != (*iter).size())
-			channels->setTopic(cmd.substr(currPos + 2, cmd.size()), client);
-		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*iter);
-		msgSend(msg, client->getFD());
-		if (!isChannelFound)
-		{
-			msg = "MODE " + (*iter) + " +o "+ client->getNickname();
-			msgSend(msg, client->getFD());
-		}
-		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*iter);
-		sendToUsersInChan(msg, client->getFD());
+        std::string msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + targetChannel->getChanName();
+        msgSend(msg, client->getFD());
 
-		if (!channels->getTopic().empty())
-		{
-			msg = "TOPIC " + (*iter) + " :" + channels->getTopic();
-
-			msgSend(msg, client->getFD());
-			sendToUsersInChan(msg, client->getFD());
-		}
-	}
+        if (!targetChannel->getTopic().empty())
+        {
+            msg = "TOPIC " + targetChannel->getChanName() + " :" + targetChannel->getTopic();
+            msgSend(msg, client->getFD());
+        }
+    }
 }
+
+void Server::parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass)
+{
+    size_t start = command.find("#");
+    if (start == std::string::npos)
+        return;
+
+    size_t end = command.find(" ", start);
+    if (end == std::string::npos)
+        end = command.size();
+
+    std::string channelList = command.substr(start, end - start);
+    channels = splitChannels(channelList);
+
+    size_t passPos = command.find(":", end);
+    if (passPos != std::string::npos)
+        pass = command.substr(passPos + 1);
+}
+
+bool Server::canJoinChannel(Client *client, Channel *channel, const std::string &pass)
+{
+    if (channel->User(client))
+    {
+        errorMsg(ERR462_ALREADYREGISTERED, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+        return false;
+    }
+
+    if (channel->getLimitMode() && static_cast<int>(channel->getUser().size()) >= channel->getLimit())
+    {
+        errorMsg(ERR471_CHANNELISFULL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+        return false;
+    }
+
+    if (channel->getPassMode() && pass != channel->getPassword())
+    {
+        errorMsg(ERR475_BADCHANNELKEY, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+        return false;
+    }
+
+    if (channel->getInviteMode() && !channel->User(client))
+    {
+        errorMsg(ERR473_INVITEONLYCHAN, client->getFD(), channel->getChanName(), client->getNickname(), "", "");
+        return false;
+    }
+
+    return true;
+}
+
+Channel *Server::findOrCreateChannel(const std::string &channelName)
+{
+    std::vector<Channel*>::iterator it = findChannel(channelName);
+
+    if (it != _chan.end())
+    {
+        return *it;
+    }
+
+    Channel *newChannel = addChan(channelName);
+    if (!newChannel)
+        return NULL;
+
+    std::cout << "Channel [" << channelName << "] created." << std::endl;
+    return newChannel;
+}
+
+std::vector<std::string> Server::splitChannels(const std::string &channelList)
+{
+    std::vector<std::string> channels;
+    size_t start = 0;
+    while (start < channelList.size())
+    {
+        size_t end = channelList.find(",", start);
+        if (end == std::string::npos)
+            end = channelList.size();
+        std::string channelName = channelList.substr(start, end - start);
+        if (!channelName.empty())
+            channels.push_back(channelName);
+        start = end + 1;
+    }
+    return channels;
+}
+
 
 void	Server::PASS(Client *client, Channel *channel)
 {
@@ -304,53 +338,57 @@ void Server::QUIT(Client *client, Channel *channel)
 	}
 }
 
-/*
-bool Server::PART(Client &client, std::vector<std::string> &params)
+void Server::PART(Client *client, Channel *channel)
 {
-	(void)params; // delete when use params
-	std::string chanName = ""; //change to appropriate params[i]
-	std::cout << "Server: Execute cmdPart" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:461, need more params
-	if (chanName.length() <= 0)
+	std::cout << GREEN << "COMMAND PART" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
+
+    if (channel == NULL)
 	{
-		errorMsg(ERR461_NEEDMOREPARAMS, clients->getFD(), clients->getNickname(), "", "", "");
-		return (false);
-	}
-	// err:403, no such channel
-	if (findChannel(chanName) == _chan.end())
+    	std::cout << "Channel does not exist" << std::endl;
+    	errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), "", "", "", "");
+        return;
+    }
+
+    // Remove the client from various channel roles
+    cleanupClients(client, channel);
+
+    std::cout << "Users that are still on the channel: " << channel->getUser().size() << std::endl;
+
+    // Construct and send the PART message
+    std::string partMsg = ":" + client->getNickname() + "@" + client->getHost() + " PART " + channel->getChanName();
+     msgSend(partMsg, client->getFD());
+
+    // If there are still members in the channel, send the message to them
+    if (channel->getUser().size() > 0)
 	{
-		errorMsg(ERR403_NOSUCHCHANNEL, clients->getFD(), clients->getNickname(), chanName, "", "");
-		return (false);
-	}
-	// err:442, not on channel
-	if (findClientChannel(client.getNickname(), *channels) == channels->getUser().end())
+        sendToUsersInChan(partMsg, client->getFD());
+    }
+	else if (channel->getUser().size() == 0)
 	{
-		errorMsg(ERR442_NOTONCHANNEL, clients->getFD(), channels->getChanName(), "", "", "");
-		return (false);
-	}
-	Channel *channel = *findChannel(chanName); // NOT SURE : UNDEFINED BEHAVIOR
-	client.leaveChannel(*channel);
-	if (channel->getUser().size() == 0) // if no more user, delete chan
-	{
-		delete channel;
-		this->_chan.erase(findChannel(chanName));
-	}
-	else // send part to all users
-	{
-		sendToUsersInChan(msg, clients->getFD());
-		return (true);
-	}
-	return (false);
-// output when PART:
-// 1. no params leads to 461 PART
-// 2. no such channel leads to 403
-// 3. user not on channel leads to 442
-// 4. when last usr, check if channel is deleted
-// 5. see if all users receive the msg PART
+        // If there are no members left, remove the channel
+        chanErase(channel);
+    }
 }
-*/
+
+void Server::cleanupClients(Client *client, Channel *channel)
+{
+    if (channel->Guest(client))
+	{
+        channel->eraseGuest(client);
+    }
+
+    if (channel->Op(client))
+	{
+        channel->eraseOp(client);
+    }
+
+    if (channel->User(client))
+	{
+        channel->eraseUser(client, client->getFD());
+    }
+}
+
 std::vector<Channel*>::iterator Server::findChannel(const std::string &chan)
 {
     for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
@@ -363,7 +401,7 @@ std::vector<Channel*>::iterator Server::findChannel(const std::string &chan)
     return _chan.end();
 }
 
-
+/*
 std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nick, Channel &channel)
 {
 	std::vector<Client *>	usrList = channel.getUser();
@@ -376,7 +414,7 @@ std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nic
 	}
 	return (it);
 }
-
+*/
 /*
 // NOTES :
 // 1. Change "!!!" which corresponds to var names
