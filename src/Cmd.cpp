@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[8] = {"CAP", "PING", "NICK", "USER", "JOIN", "PASS", "QUIT", "PART"};
+	std::string valid_commands[8] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT"};
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -14,9 +14,9 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::NICK,
 		&Server::USER,
 		&Server::JOIN,
+		&Server::PART,
 		&Server::PASS,
-		&Server::QUIT,
-		&Server::PART
+		&Server::QUIT
 	};
 	for (int i = 0; i < 8; i++)
 	{
@@ -278,6 +278,33 @@ std::vector<std::string> Server::splitChannels(const std::string &channelList)
     return channels;
 }
 
+void Server::PART(Client *client, Channel *channel)
+{
+	std::cout << GREEN << "COMMAND PART" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
+
+    if (channel == NULL)
+	{
+    	std::cout << "Channel does not exist" << std::endl;
+    	errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), "", "", "", "");
+        return;
+    }
+    // cleanup the clients from the channel
+    cleanupClients(client, channel);
+    std::cout << "Users that are still on the channel: " << channel->getUser().size() << std::endl;
+    std::string partMsg = ":" + client->getNickname() + "@" + client->getHost() + " PART " + channel->getChanName();
+     msgSend(partMsg, client->getFD());
+    // If there are still members in the channel, send the message to them
+    if (channel->getUser().size() > 0)
+	{
+        sendToUsersInChan(partMsg, client->getFD());
+    }
+	else if (channel->getUser().size() == 0)
+	{
+        // If there are no members left, remove the channel
+        chanErase(channel);
+    }
+}
 
 void	Server::PASS(Client *client, Channel *channel)
 {
@@ -311,6 +338,8 @@ void	Server::PASS(Client *client, Channel *channel)
 
 void Server::QUIT(Client *client, Channel *channel)
 {
+	std::cout << GREEN << "COMMAND QUIT" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
 	(void)channel;
 	std::cout << RED << "Client " << client->getNickname() << " has quit." << RESET << std::endl;
 	int clientSocket = client->getFD();
@@ -336,39 +365,6 @@ void Server::QUIT(Client *client, Channel *channel)
 			break;
 		}
 	}
-}
-
-void Server::PART(Client *client, Channel *channel)
-{
-	std::cout << GREEN << "COMMAND PART" << RESET << std::endl;
-	std::cout << GREEN << "-------------" << RESET << std::endl;
-
-    if (channel == NULL)
-	{
-    	std::cout << "Channel does not exist" << std::endl;
-    	errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), "", "", "", "");
-        return;
-    }
-
-    // Remove the client from various channel roles
-    cleanupClients(client, channel);
-
-    std::cout << "Users that are still on the channel: " << channel->getUser().size() << std::endl;
-
-    // Construct and send the PART message
-    std::string partMsg = ":" + client->getNickname() + "@" + client->getHost() + " PART " + channel->getChanName();
-     msgSend(partMsg, client->getFD());
-
-    // If there are still members in the channel, send the message to them
-    if (channel->getUser().size() > 0)
-	{
-        sendToUsersInChan(partMsg, client->getFD());
-    }
-	else if (channel->getUser().size() == 0)
-	{
-        // If there are no members left, remove the channel
-        chanErase(channel);
-    }
 }
 
 void Server::cleanupClients(Client *client, Channel *channel)

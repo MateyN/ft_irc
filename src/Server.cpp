@@ -240,7 +240,7 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::cout << YELLOW << "Received -> " << line << RESET << std::endl;
+		std::cout << YELLOW << "Received -> " << RESET << line << std::endl;
 		if (!line.empty())
 		{
 			parseCmd(line);
@@ -279,35 +279,27 @@ void	Server::chanErase(Channel *chan)
 
 std::string Server::parseChannel(std::string input, size_t start)
 {
-    std::string chanName;
-    size_t space = start;
-    size_t end;
+	std::string	chanName;
+	size_t		space;
+	size_t		comma;
+	size_t		end;
 
-    // Find the '#' character in the input string, if not provided.
-    if (space == std::string::npos)
-        space = input.find("#");
+	if (start == 0)
+		start = input.find("#");
 
-    if (space != std::string::npos && space != input.size() - 1)
-    {
-        size_t nextSpace = input.find(" ", space);
-        size_t comma = input.find(",", space);
+	if (start != std::string::npos && start != input.size() - 1)
+	{
+		space = input.find(" ", start);
+		comma = input.find(",", start);
 
-        // Determine the position of the next space or comma.
-        end = std::min(nextSpace, comma);
-        
-        // If no space or comma was found, set end to the end of the input.
-        if (end == std::string::npos)
-            end = input.size();
-        
-        // Extract the channel name.
-        chanName = input.substr(space, end - space);
-    }
-    else
-    {
-        // If '#' was not found or it's at the end, set chanName to the entire input.
-        chanName = input;
-    }
-    return chanName;
+		end = std::min(space, comma);
+		if (end == std::string::npos)
+			end = input.size();
+		chanName = input.substr(start, end - start);
+	}
+	else
+		chanName = input;
+	return chanName;
 }
 
 Channel*	Server::getChan(std::string msgBuf)
