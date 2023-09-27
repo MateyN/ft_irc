@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[8] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT"};
+	std::string valid_commands[10] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "LIST" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -16,9 +16,11 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::JOIN,
 		&Server::PART,
 		&Server::PASS,
-		&Server::QUIT
+		&Server::QUIT,
+		&Server::KICK,
+		&Server::LIST // channel debug 
 	};
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
@@ -153,6 +155,7 @@ void	Server::USER(Client *client, Channel *channel)
 		std::string	msg = "USER : " + user + CRLF;
 		client->setUser(user);
         welcomeMsg(client);
+		printIRCBanner();
 	}
 }
 
@@ -261,6 +264,18 @@ Channel *Server::findOrCreateChannel(const std::string &channelName)
     return newChannel;
 }
 
+std::vector<Channel*>::iterator Server::findChannel(const std::string &chan)
+{
+    for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
+    {
+        if (!chan.empty() && chan == (*it)->getChanName())
+        {
+            return it;
+        }
+    }
+    return _chan.end();
+}
+
 std::vector<std::string> Server::splitChannels(const std::string &channelList)
 {
     std::vector<std::string> channels;
@@ -303,6 +318,24 @@ void Server::PART(Client *client, Channel *channel)
 	{
         // If there are no members left, remove the channel
         chanErase(channel);
+    }
+}
+
+void Server::cleanupClients(Client *client, Channel *channel)
+{
+    if (channel->Guest(client))
+	{
+        channel->eraseGuest(client);
+    }
+
+    if (channel->Op(client))
+	{
+        channel->eraseOp(client);
+    }
+
+    if (channel->User(client))
+	{
+        channel->eraseUser(client, client->getFD());
     }
 }
 
@@ -367,35 +400,92 @@ void Server::QUIT(Client *client, Channel *channel)
 	}
 }
 
-void Server::cleanupClients(Client *client, Channel *channel)
+void Server::KICK(Client *client, Channel *channel)
 {
-    if (channel->Guest(client))
-	{
-        channel->eraseGuest(client);
+    std::cout << GREEN << "COMMAND KICK" << RESET << std::endl;
+    std::cout << GREEN << "-------------" << RESET << std::endl;
+    if (!channel->Op(client))
+    {
+        errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
+        return;
     }
+    // parse the channel name, nick, and reason
+    std::string chan, nick, reason;
+    if (!parseKickCommand(cmd, chan, nick, reason))
+    {
+        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), chan, nick, "", "");
+        return;
+    }
+    if (!chanExist(chan))
+    {
+        errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
+        return;
+    }
+    if (!channel->User(client))
+    {
+        errorMsg(ERR442_NOTONCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
+        return;
+    }
+    // check if the target nickname is a member of the channel
+    if (!channel->nickMember(nick))
+    {
+        errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+        return;
+    }
+    // Construct the KICK message
+    std::string msg = ':' + client->getNickname() + "!~" + client->getHost() + ' ' + "KICK " + chan + ' ' + nick + " :" + reason;
 
-    if (channel->Op(client))
-	{
-        channel->eraseOp(client);
-    }
+    // Send the KICK message to the channel
+    sendToUsersInChan(msg, client->getFD());
 
-    if (channel->User(client))
-	{
-        channel->eraseUser(client, client->getFD());
-    }
+    // Remove the kicked user from the channel
+    channel->eraseUser(client, client->getFD());
 }
 
-std::vector<Channel*>::iterator Server::findChannel(const std::string &chan)
+
+// parse the KICK command and extract channel, nick, and reason.
+bool Server::parseKickCommand(const std::string &kick, std::string &chan, std::string &nick, std::string &reason)
 {
+    size_t doubleColonPos = kick.find(':');
+    if (doubleColonPos == std::string::npos)
+	{
+        return false; // invalid command format, missing ':'.
+    }
+    size_t space = kick.find(' '); // space position
+    if (space == std::string::npos)
+	{
+        return false; // invalid command format, missing space.
+    }
+    chan = kick.substr(space + 1, doubleColonPos - space - 1);
+
+    size_t nickStart = space + chan.size() + 2; // Skip ' ' and ':'
+    size_t reasonStart = doubleColonPos + 1;
+    if (reasonStart >= kick.size())
+	{
+        return false; // invalid command format, missing reason.
+    }
+    size_t reasonLength = kick.size() - reasonStart;
+    nick = kick.substr(nickStart, doubleColonPos - nickStart);
+    reason = kick.substr(reasonStart, reasonLength);
+
+    return true;
+}
+
+//////////////////////
+//  CHANNEL DEBUG  //
+////////////////////
+void Server::LIST(Client *client, Channel *channel)
+{
+	(void)channel;
+    std::string channelList;
     for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
     {
-        if (!chan.empty() && chan == (*it)->getChanName())
-        {
-            return it;
-        }
+        channelList += (*it)->getChanName() + " ";
     }
-    return _chan.end();
+    std::string response = "Channel List: " + channelList;
+    msgSend(response, client->getFD());
 }
+
 
 /*
 std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nick, Channel &channel)

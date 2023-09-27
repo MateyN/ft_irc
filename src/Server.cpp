@@ -302,11 +302,11 @@ std::string Server::parseChannel(std::string input, size_t start)
 	return chanName;
 }
 
-Channel*	Server::getChan(std::string msgBuf)
+Channel*	Server::getChan(std::string msg)
 {
 	std::string		chanName;
 
-	chanName = parseChannel(msgBuf, 0);
+	chanName = parseChannel(msg, 0);
 
 	for(std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
 	{

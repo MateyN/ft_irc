@@ -74,28 +74,38 @@ class Server
 		void		setPort(int port);
 		std::string	getPassword();
 		void		setPass(std::string pass);
-		Channel*	getChan(std::string msgBuf);
+		Channel*	getChan(std::string msg);
 
 		void						parseCmd(std::string buf);
 		std::string					parseChannel(std::string buf, size_t pos);
 		void						msgSend(std::string msg, int fd);
 		void						sendToUsersInChan(std::string msg, int fd);
 		void						welcomeMsg(Client *client);
+		void						printIRCBanner();
 		void 						errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
-		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
-		//std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
+	
+		//nick
 		void						handleNickSize(Client *client, const std::string &newNick);
 		void						handleNicknameChange(Client *client, const std::string &newNick);
 		bool						isNicknameInUse(const std::string &nickname);
 		bool						isNickValid(const std::string &nickname);
 		void						setNewNick(Client *client, const std::string &newNick);
-		std::vector<std::string>	splitChannels(const std::string &channelList);
-		Channel* 					findOrCreateChannel(const std::string &channelName);
-		bool						canJoinChannel(Client *client, Channel *channel, const std::string &pass);
-		void						parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass);
-		//void						handleNoSuchChannelError(Client *client);
+
+		//join
+		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
+		std::vector<std::string>			splitChannels(const std::string &channelList);
+		Channel* 							findOrCreateChannel(const std::string &channelName);
+		bool								canJoinChannel(Client *client, Channel *channel, const std::string &pass);
+		void								parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass);
+		
+		//part
 		void						cleanupClients(Client *client, Channel *channel);
+		
+		//cmd
 		void						callCmd(std::string cmd, Client *client, Channel *channel);
+		
+		//kick
+		bool						parseKickCommand(const std::string &kickCommand, std::string &chan, std::string &nick, std::string &reason);
 
 		class ExceptionServer : public std::exception
 		{
@@ -121,7 +131,7 @@ class Server
 		std::vector<Client*>	_cli;
 		std::vector<Channel*>	_chan;
 		std::string				_password;
-		std::string 			valid_commands[8];
+		std::string 			valid_commands[10];
 
 				// cmd.cpp
 		void					CAP(Client *client, Channel *channel);
@@ -131,8 +141,9 @@ class Server
 		void					JOIN(Client *client, Channel *channel);
 		void					PASS(Client *client, Channel *channel);
 		void					QUIT(Client *client, Channel *channel);
-		//bool					KICK(Client *client, Channel *channel);
+		void					KICK(Client *client, Channel *channel);
 		void					PART(Client *client, Channel *channel);
+		void					LIST(Client *client, Channel *channel);
 		
 };
 
