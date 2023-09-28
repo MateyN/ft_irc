@@ -9,7 +9,7 @@ static void handler(int ac, char* av[])
 	// check(1) : only 2 arguments
 	if (ac != 3) 
 	{
-		std::cerr << "error: bad arguments: must have <port> <password>" << std::endl;
+		std::cerr << RED << "Error: bad arguments -> example: ./ircserv <port> <password> " << RESET << std::endl;
 		exit(1);
 	}
 
@@ -18,7 +18,7 @@ static void handler(int ac, char* av[])
 	{
 		if (!std::isdigit(av[1][i]))
 		{
-			std::cerr << "error: port: it is not made of digits" << std::endl;
+			std::cerr << RED << "Error: the port it is not made of digits" << RESET << std::endl;
 			exit(2);
 		}
 	}
@@ -27,7 +27,7 @@ static void handler(int ac, char* av[])
 	int i = std::stoi(av[1]);
 	if (i < PORT_MIN || i > PORT_MAX)
 	{
-		std::cerr << "error: port: number should be >= 1024 and <= 65535" << std::endl;
+		std::cerr << RED << "Error: port number should be >= 1024 and <= 65535" << RESET << std::endl;
 		exit(3);
 	}
 }
@@ -44,7 +44,7 @@ int main(int ac, char *av[])
 		server.setupServerSocket();
 		server.setPass(av[2]);
 		std::cout << CYAN << "Server created and launched!" << RESET << std::endl;
-		server.printIRCBanner();
+		//server.printIRCBanner();
 		server.serverConnect();
 		return 0;
 	}

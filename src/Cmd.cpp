@@ -155,7 +155,7 @@ void	Server::USER(Client *client, Channel *channel)
 		std::string	msg = "USER : " + user + CRLF;
 		client->setUser(user);
         welcomeMsg(client);
-		printIRCBanner();
+		//printIRCBanner();
 	}
 }
 
@@ -380,14 +380,7 @@ void Server::QUIT(Client *client, Channel *channel)
 
 	for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
 	{
-		if ((*it)->Guest(client))
-			((*it)->eraseGuest(client));
-
-		if ((*it)->Op(client))
-			((*it)->eraseOp(client));
-
-		if ((*it)->User(client))
-			(*it)->eraseUser((client), client->getFD());
+		cleanupClients(client, *it);
 	}
 	for (size_t i = 0; i < _cli.size(); i++)
 	{
@@ -402,46 +395,47 @@ void Server::QUIT(Client *client, Channel *channel)
 
 void Server::KICK(Client *client, Channel *channel)
 {
-    std::cout << GREEN << "COMMAND KICK" << RESET << std::endl;
-    std::cout << GREEN << "-------------" << RESET << std::endl;
-    if (!channel->Op(client))
-    {
-        errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
-        return;
-    }
-    // parse the channel name, nick, and reason
-    std::string chan, nick, reason;
-    if (!parseKickCommand(cmd, chan, nick, reason))
-    {
-        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), chan, nick, "", "");
-        return;
-    }
-    if (!chanExist(chan))
-    {
-        errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
-        return;
-    }
-    if (!channel->User(client))
-    {
-        errorMsg(ERR442_NOTONCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
-        return;
-    }
-    // check if the target nickname is a member of the channel
-    if (!channel->nickMember(nick))
-    {
-        errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-        return;
-    }
-    // Construct the KICK message
-    std::string msg = ':' + client->getNickname() + "!~" + client->getHost() + ' ' + "KICK " + chan + ' ' + nick + " :" + reason;
+    std::cout << "COMMAND KICK" << std::endl;
+	std::cout << "-------------" << std::endl;
 
-    // Send the KICK message to the channel
-    sendToUsersInChan(msg, client->getFD());
+	std::string chan = parseChannel(cmd, 0);
+	size_t 		doubleColonPos = cmd.find(':');
+	size_t 		nickStart = cmd.find(chan) + chan.size() + 1;
+	size_t 		nickEnd = cmd.find(" :");
+	std::string	nick = cmd.substr(nickStart, nickEnd - nickStart);
+	std::string reason = cmd.substr(doubleColonPos + 1);
+	//std::string kick;
 
-    // Remove the kicked user from the channel
-    channel->eraseUser(client, client->getFD());
+	if (channel->Op(client) == true)
+	{
+		if (!chanExist(chan))
+			errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
+
+		if (!channel->User(client))
+		{
+			errorMsg(ERR442_NOTONCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
+			return;
+		}
+		if (!channel->nickMember(nick))
+		{
+			errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+			return;
+		}
+		std::string msg = ':' + client->getNickname() + "!~" + client->getHost() + ' ' + token + ' ' + chan + ' ' + nick + " :" + reason;
+		if (chan.empty() || nick.empty())
+			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), chan, nick, "", "");
+		
+		else
+		{
+			msgSend(msg, client->getFD());
+			sendToUsersInChan(msg, client->getFD());
+		}
+	}
+	else
+	{
+		errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), chan, "Not allowed", "");
+	}
 }
-
 
 // parse the KICK command and extract channel, nick, and reason.
 bool Server::parseKickCommand(const std::string &kick, std::string &chan, std::string &nick, std::string &reason)
