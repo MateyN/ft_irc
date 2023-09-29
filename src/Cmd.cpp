@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[10] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "LIST" };
+	std::string valid_commands[11] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "INVITE", "TOPIC" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -18,9 +18,11 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::PASS,
 		&Server::QUIT,
 		&Server::KICK,
-		&Server::LIST // channel debug 
+		&Server::INVITE,
+		&Server::TOPIC
+		//&Server::LIST // channel debug 
 	};
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 11; i++)
 	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
@@ -437,6 +439,83 @@ void Server::KICK(Client *client, Channel *channel)
 	}
 }
 
+void Server::INVITE(Client* client, Channel* channel)
+{
+    std::cout << "COMMAND INVITE" << std::endl;
+	std::cout << "---------------" << std::endl;
+
+    std::string invited;
+    std::string chanName;
+	size_t 		space;
+	size_t 		chan;
+
+    chan = cmd.find("#");
+    if (chan != std::string::npos)
+	{
+        invited = cmd.substr(0, chan - 1);
+		space = cmd.find(" ", chan + 1);
+
+        if (space != std::string::npos)
+		{
+            chanName = cmd.substr(chan, space - (chan + 1));
+        }
+		else
+		{
+            chanName = cmd.substr(chan);
+        }
+        if (!chanExist(chanName))
+		{
+            errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), chanName, "", "", "");
+            return;
+        }
+        if (!channel->User(client) || !channel->Op(client))
+		{
+            errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), chanName, "", "", "");
+            return;
+        }
+		// TODO
+        // check for the invited client if it exists and if its not already a member
+        // invite...
+    }
+}
+
+
+void Server::TOPIC(Client* client, Channel* channel)
+{
+    std::cout << "COMMAND INVITE" << std::endl;
+	std::cout << "---------------" << std::endl;
+
+    std::string topicName;
+    std::string msg;
+
+    // Check if the channel exists
+    if (channel == NULL)
+	{
+        errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), "", "", "", "");
+        return;
+    }
+    // Check if the command includes "::" to handle /topic alone
+    if (cmd.find("::") != std::string::npos)
+	{
+        msg = ": TOPIC " + channel->getChanName();
+        channel->setTopic("", client);
+    } 
+	else
+	{
+        size_t pos = cmd.find(":");
+
+        if (pos != std::string::npos && pos + 1 != cmd.size())
+            topicName = cmd.substr(pos + 1);
+        else
+            topicName = cmd;
+        channel->setTopic(topicName, client);
+        msg = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic(); //332 reply code?
+    }
+    msgSend(msg, client->getFD());
+    sendToUsersInChan(msg, client->getFD());
+}
+
+/*
 // parse the KICK command and extract channel, nick, and reason.
 bool Server::parseKickCommand(const std::string &kick, std::string &chan, std::string &nick, std::string &reason)
 {
@@ -479,7 +558,7 @@ void Server::LIST(Client *client, Channel *channel)
     std::string response = "Channel List: " + channelList;
     msgSend(response, client->getFD());
 }
-
+*/
 
 /*
 std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nick, Channel &channel)

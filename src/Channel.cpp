@@ -68,13 +68,13 @@ int	Channel::getLimit()
 
 std::string	Channel::getUsers()
 {
-	std::string	allMembers;
+	std::string	users;
 
 	for (std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
 	{
-		allMembers += (*it)->getNickname() + "@" + (*it)->getHost() + " ";
+		users += (*it)->getNickname() + "@" + (*it)->getHost() + " ";
 	}
-	return allMembers;
+	return users;
 }
 
 // setters
