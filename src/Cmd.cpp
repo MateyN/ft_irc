@@ -514,7 +514,6 @@ void Server::TOPIC(Client* client, Channel* channel)
     std::string msg;
 	size_t 		pos;
 
-    // Check if the channel exists
     if (channel == NULL)
 	{
         errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), "", "", "", "");
@@ -523,8 +522,9 @@ void Server::TOPIC(Client* client, Channel* channel)
     // Check if the command includes "::" to handle /topic alone
     if (cmd.find("::") != std::string::npos)
 	{
-        msg = ": TOPIC " + channel->getChanName();
+        msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName();
         channel->setTopic("", client);
+		//msg += " (unset by " + client->getNickname() + ")";
     } 
 	else
 	{
@@ -533,11 +533,21 @@ void Server::TOPIC(Client* client, Channel* channel)
             topicName = cmd.substr(pos + 1);
         else
             topicName = cmd;
-        channel->setTopic(topicName, client);
-        msg = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic(); //332 reply code?
+		std::string oldTopic = channel->getTopic();
+		channel->setTopic(topicName, client);
+		if (topicName.empty())
+		{
+            msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName() + " :" + topicName;
+        }
+        else
+        {
+            msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName() + " :" + topicName + " (was: " + oldTopic + ")";
+        }
     }
-    msgSend(msg, client->getFD());
+	msgSend(msg, client->getFD());
     sendToUsersInChan(msg, client->getFD());
+    std::string reply = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
+    msgSend(reply, client->getFD());
 }
 
 /*
