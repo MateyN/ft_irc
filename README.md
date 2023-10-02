@@ -70,9 +70,9 @@
 - [RFC2811 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2811)
 - [RFC2812 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2812)
 	- Labels :
-		- [ ] when connecting, client unique id and the server which introduced the client
+		- [X] when connecting, client unique id and the server which introduced the client
 		- [ ] allow operators who can :
-			- [ ] disconnect and reconnect servers (see if applicable)
+			- [X] disconnect and reconnect servers (see if applicable)
 			- [X] remove a user from server (KICK)
 		- [X] channels begin with #, case insensitive
 - [RFC2813 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2813)

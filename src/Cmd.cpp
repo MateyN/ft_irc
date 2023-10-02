@@ -145,12 +145,13 @@ void Server::setNewNick(Client *client, const std::string &newNick)
 void	Server::USER(Client *client, Channel *channel)
 {
 	(void)channel;
+	size_t colonPos;
 
 	if (client->isRegister() == false)
 	{
 		return;
 	}
-	std::size_t colonPos = cmd.find(':');
+	colonPos = cmd.find(':');
 	if (colonPos != std::string::npos)
 	{
 		std::string user = cmd.substr(colonPos + 1);
@@ -454,39 +455,64 @@ void Server::INVITE(Client* client, Channel* channel)
 	{
         invited = cmd.substr(0, chan - 1);
 		space = cmd.find(" ", chan + 1);
-
         if (space != std::string::npos)
 		{
             chanName = cmd.substr(chan, space - (chan + 1));
-        }
-		else
+        } 
+		else 
 		{
             chanName = cmd.substr(chan);
         }
         if (!chanExist(chanName))
 		{
+            std::cout << "Channel does not exist" << std::endl;
             errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), chanName, "", "", "");
             return;
         }
-        if (!channel->User(client) || !channel->Op(client))
+        if (!channel->User(client))
+		{
+            errorMsg(ERR442_NOTONCHANNEL, client->getFD(), chanName, "", "", "");
+        }
+        else if (!channel->User(client))
 		{
             errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), chanName, "", "", "");
-            return;
         }
-		// TODO
-        // check for the invited client if it exists and if its not already a member
-        // invite...
+        else if (!nickExist(invited))
+		{
+            errorMsg(ERR401_NOSUCHNICK, client->getFD(), invited, "", "", "");
+        }
+        else if (channel->nickMember(invited))
+		{
+            errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), chanName, invited, "", "");
+        } 
+		else
+		{
+            for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
+			{
+                if (invited == (*it)->getNickname())
+				{
+                    channel->addGuest(*it);
+                    std::string reply = "341 " + client->getNickname() + " " + invited + " " + chanName + CRLF;
+                    msgSend(reply, client->getFD());
+                    std::string msg1 = ":" + client->getNickname() + " " + token + " " + invited + " " + chanName;
+                    msgSend(msg1, client->getFD());
+                    std::string msg2 = ":" + client->getNickname() + " " + token + " " + invited + " " + chanName;
+                    msgSend(msg2, (*it)->getFD());
+                    break;
+                }
+            }
+        }
     }
 }
 
-
 void Server::TOPIC(Client* client, Channel* channel)
 {
-    std::cout << "COMMAND INVITE" << std::endl;
+    std::cout << "COMMAND TOPIC" << std::endl;
 	std::cout << "---------------" << std::endl;
 
     std::string topicName;
     std::string msg;
+	size_t 		pos;
 
     // Check if the channel exists
     if (channel == NULL)
@@ -502,8 +528,7 @@ void Server::TOPIC(Client* client, Channel* channel)
     } 
 	else
 	{
-        size_t pos = cmd.find(":");
-
+    	pos = cmd.find(":");
         if (pos != std::string::npos && pos + 1 != cmd.size())
             topicName = cmd.substr(pos + 1);
         else

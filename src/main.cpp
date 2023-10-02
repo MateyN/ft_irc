@@ -44,7 +44,7 @@ int main(int ac, char *av[])
 		server.setupServerSocket();
 		server.setPass(av[2]);
 		std::cout << CYAN << "Server created and launched!" << RESET << std::endl;
-		//server.printIRCBanner();
+		server.printIRCBanner();
 		server.serverConnect();
 		return 0;
 	}

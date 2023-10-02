@@ -37,20 +37,18 @@ Server& Server::operator=(const Server &rhs)
 // Default Destructor 
 Server::~Server()
 {
-	if (clients != NULL)
-	{
-		delete clients;
-		clients = NULL;
-	}
-
-	if (channels != NULL)
-	{
-		delete channels;
-		channels = NULL;
-	}
-	//std::cout << "Destructor Server Called" << std::endl;
-	//return;
+    for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
+    {
+        delete *it;
+    }
+    _cli.clear();
+    for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
+    {
+        delete *it;
+    }
+    _chan.clear();
 }
+
 
 void	Server::setPort(int port)
 {
@@ -64,13 +62,13 @@ int		Server::getPort()
 
 bool	Server::setupServerSocket()
 {
-	int	opt_len = 1;
 	int	clientSocket;
 
 	_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_socket == ERROR)
 		throw (Server::ExceptionServer(ERRNOMSG"SOCK_STREAM"));
 
+	int	opt_len = 1;
 	clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof(opt_len));
 	if (clientSocket == ERROR)
 		throw (Server::ExceptionServer(ERRNOMSG"socket"));
@@ -82,13 +80,16 @@ bool	Server::setupServerSocket()
 	_sockets.push_back(_socket);
 
 	bzero(&_addr, sizeof(_addr));
-	_addr.sin_family = AF_INET;
+	_addr.sin_family = AF_UNSPEC;
 	_addr.sin_addr.s_addr = INADDR_ANY; // setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
 	_addr.sin_port = htons(_port); // setting the server's port number & converts it to network byte order.
 
 	clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
 	if (clientSocket == ERROR)
+	{
+		perror("bind");
 		throw (Server::ExceptionServer(ERRNOMSG"fail bind"));
+	}
 
 	clientSocket = listen(_socket, MAX_CLIENTS);
 	if (clientSocket == ERROR)
