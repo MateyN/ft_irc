@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[11] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "INVITE", "TOPIC" };
+	std::string valid_commands[12] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -19,10 +19,11 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::QUIT,
 		&Server::KICK,
 		&Server::INVITE,
-		&Server::TOPIC
+		&Server::TOPIC,
+		&Server::PRIVMSG
 		//&Server::LIST // channel debug 
 	};
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < 12; i++)
 	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
@@ -548,6 +549,66 @@ void Server::TOPIC(Client* client, Channel* channel)
     sendToUsersInChan(msg, client->getFD());
     std::string reply = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
     msgSend(reply, client->getFD());
+}
+
+void	Server::PRIVMSG(Client* client, Channel* channel) 
+{
+	std::cout << "COMMAND PRIVMSG" << std::endl;
+	std::cout << "---------------" << std::endl;
+
+    bool 		messageSend = false;
+    size_t 		msgStart = cmd.find(':');
+    std::string recipient = cmd.substr(1, msgStart - 1);
+    std::string msgContent = cmd.substr(msgStart + 1);
+
+    recipient = '#' + recipient;
+    if (cmd.find(recipient) != std::string::npos)
+	{
+        std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
+        sendToUsersInChan(msg, client->getFD());
+        messageSend = true;
+    }
+    // If the channel name is not found but there's a '#' in the command
+    if (!messageSend && cmd.find('#') != std::string::npos)
+	{
+        std::vector<std::string> channelList;
+
+        size_t pos = cmd.find("#");
+        while (pos != std::string::npos)
+		{
+            std::string chanName = parseChannel(cmd, pos);
+            channelList.push_back(chanName);
+            pos = cmd.find('#', pos + 1);
+        }
+
+        for (size_t i = 0; i < channelList.size(); i++)
+		{
+            bool chanExist = false;
+            for (size_t j = 0; j < _chan.size(); ++j)
+			{
+                if (_chan[j]->getChanName() == channelList[i])
+				{
+                    if (_chan[j]->User(client))
+					{
+                        chanExist = true;
+                        std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + channelList[i];
+                        sendToUsersInChan(msg, client->getFD());
+                        return;
+                    }
+					if (!chanExist)
+					{
+						errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channelList[i], "", "", "");
+                		return;
+					}
+					else
+					{
+                        errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
+                        return;
+                    }
+                }
+            }
+        }
+    }
 }
 
 /*

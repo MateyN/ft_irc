@@ -143,8 +143,9 @@ class Server
 		void					QUIT(Client *client, Channel *channel);
 		void					KICK(Client *client, Channel *channel);
 		void					PART(Client *client, Channel *channel);
-		void					INVITE(Client* client, Channel* channel);
-		void					TOPIC(Client* client, Channel* channel);
+		void					INVITE(Client *client, Channel *channel);
+		void					TOPIC(Client *client, Channel *channel);
+		void					PRIVMSG(Client *client, Channel *channel);
 		//void					LIST(Client *client, Channel *channel);
 		
 };
