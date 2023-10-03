@@ -10,7 +10,7 @@ void	Server::msgSend(std::string msg, int fd)
 
 void	Server::sendToUsersInChan(std::string msg, int fd)
 {
-	std::vector<Client*>users = channels->getUser();
+	std::vector<Client*> users = channels->getUser();
 	for (std::vector<Client*>::iterator it = users.begin(); it != users.end(); it++)
 	{
 		if ((*it)->getFD() != fd)

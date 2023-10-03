@@ -185,7 +185,7 @@ void Server::JOIN(Client *client, Channel *channel)
 		std::string channelName = *iter;
         Channel *targetChannel = findOrCreateChannel(channelName);
         if (!targetChannel)
-            return;
+            continue;
 
         if (!canJoinChannel(client, targetChannel, pass))
             continue;
@@ -195,6 +195,10 @@ void Server::JOIN(Client *client, Channel *channel)
 
         std::string msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + targetChannel->getChanName();
         msgSend(msg, client->getFD());
+		//sendToUsersInChan(msg, client->getFD());
+
+		//msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + targetChannel->getChanName();
+        //sendToUsersInChan(msg, client->getFD());
 
         if (!targetChannel->getTopic().empty())
         {
@@ -403,18 +407,17 @@ void Server::KICK(Client *client, Channel *channel)
 	std::cout << "-------------" << std::endl;
 
 	std::string chan = parseChannel(cmd, 0);
-	size_t 		doubleColonPos = cmd.find(':');
-	size_t 		nickStart = cmd.find(chan) + chan.size() + 1;
-	size_t 		nickEnd = cmd.find(" :");
-	std::string	nick = cmd.substr(nickStart, nickEnd - nickStart);
-	std::string reason = cmd.substr(doubleColonPos + 1);
 	//std::string kick;
 
 	if (channel->Op(client) == true)
 	{
 		if (!chanExist(chan))
 			errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
-
+		size_t doubleColonPos = cmd.find(':');
+		std::string reason = cmd.substr(doubleColonPos + 1);
+		size_t nickStart = cmd.find(chan) + chan.size() + 1; 
+		size_t nickEnd = cmd.find(" :");
+		std::string nick = cmd.substr(nickStart, nickEnd - nickStart);
 		if (!channel->User(client))
 		{
 			errorMsg(ERR442_NOTONCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
@@ -428,14 +431,13 @@ void Server::KICK(Client *client, Channel *channel)
 		std::string msg = ':' + client->getNickname() + "!~" + client->getHost() + ' ' + token + ' ' + chan + ' ' + nick + " :" + reason;
 		if (chan.empty() || nick.empty())
 			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), chan, nick, "", "");
-		
 		else
 		{
 			msgSend(msg, client->getFD());
 			sendToUsersInChan(msg, client->getFD());
 		}
 	}
-	else
+	else 
 	{
 		errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), chan, "Not allowed", "");
 	}
