@@ -439,7 +439,9 @@ void Server::KICK(Client *client, Channel *channel)
 	}
 	else 
 	{
-		errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), chan, "Not allowed", "");
+		std::string errorMsg = "482 " + client->getNickname() + " " + channel->getChanName() + " :You're not a channel operator";
+    	msgSend(errorMsg, client->getFD());
+		//errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), chan, "Not allowed", "");
 	}
 }
 
