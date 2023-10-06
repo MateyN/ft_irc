@@ -132,7 +132,7 @@ class Server
 		std::vector<Client*>	_cli;
 		std::vector<Channel*>	_chan;
 		std::string				_password;
-		std::string 			valid_commands[11];
+		std::string 			valid_commands[12];
 
 				// cmd.cpp
 		void					CAP(Client *client, Channel *channel);
@@ -147,6 +147,7 @@ class Server
 		void					INVITE(Client *client, Channel *channel);
 		void					TOPIC(Client *client, Channel *channel);
 		void					PRIVMSG(Client *client, Channel *channel);
+		//void					NOTICE(Client *client, Channel *channel);
 		//void					LIST(Client *client, Channel *channel);
 		
 };

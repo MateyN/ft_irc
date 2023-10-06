@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[12] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG" };
+	std::string valid_commands[12] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG" /*, "NOTICE"*/ };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -21,6 +21,7 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::INVITE,
 		&Server::TOPIC,
 		&Server::PRIVMSG
+		//&Server::NOTICE
 		//&Server::LIST // channel debug 
 	};
 	for (int i = 0; i < 12; i++)
@@ -282,100 +283,7 @@ void Server::JOIN(Client *client, Channel *channel)
 		}
 	}
 }
-/*
-void Server::parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass)
-{
-    size_t start = command.find("#");
-    if (start == std::string::npos)
-        return;
 
-    size_t end = command.find(" ", start);
-    if (end == std::string::npos)
-        end = command.size();
-
-    std::string channelList = command.substr(start, end - start);
-    channels = splitChannels(channelList);
-
-    size_t passPos = command.find(":", end);
-    if (passPos != std::string::npos)
-        pass = command.substr(passPos + 1);
-}
-
-bool Server::canJoinChannel(Client *client, Channel *channel, const std::string &pass)
-{
-    if (channel->User(client))
-    {
-        errorMsg(ERR462_ALREADYREGISTERED, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-        return false;
-    }
-
-    if (channel->getLimitMode() && static_cast<int>(channel->getUser().size()) >= channel->getLimit())
-    {
-        errorMsg(ERR471_CHANNELISFULL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-        return false;
-    }
-
-    if (channel->getPassMode() && pass != channel->getPassword())
-    {
-        errorMsg(ERR475_BADCHANNELKEY, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-        return false;
-    }
-
-    if (channel->getInviteMode() && !channel->User(client))
-    {
-        errorMsg(ERR473_INVITEONLYCHAN, client->getFD(), channel->getChanName(), client->getNickname(), "", "");
-        return false;
-    }
-
-    return true;
-}
-
-Channel *Server::findOrCreateChannel(const std::string &channelName)
-{
-    std::vector<Channel*>::iterator it = findChannel(channelName);
-
-    if (it != _chan.end())
-    {
-        return *it;
-    }
-
-    Channel *newChannel = addChan(channelName);
-    if (!newChannel)
-        return NULL;
-
-    std::cout << "Channel [" << channelName << "] created." << std::endl;
-    return newChannel;
-}
-
-std::vector<Channel*>::iterator Server::findChannel(const std::string &chan)
-{
-    for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
-    {
-        if (!chan.empty() && chan == (*it)->getChanName())
-        {
-            return it;
-        }
-    }
-    return _chan.end();
-}
-
-std::vector<std::string> Server::splitChannels(const std::string &channelList)
-{
-    std::vector<std::string> channels;
-    size_t start = 0;
-    while (start < channelList.size())
-    {
-        size_t end = channelList.find(",", start);
-        if (end == std::string::npos)
-            end = channelList.size();
-        std::string channelName = channelList.substr(start, end - start);
-        if (!channelName.empty())
-            channels.push_back(channelName);
-        start = end + 1;
-    }
-    return channels;
-}
-*/
 void Server::PART(Client *client, Channel *channel)
 {
 	std::cout << GREEN << "COMMAND PART" << RESET << std::endl;
@@ -658,56 +566,117 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
     std::string recipient = cmd.substr(1, msgStart - 1);
     std::string msgContent = cmd.substr(msgStart + 1);
 
-    recipient = '#' + recipient;
-    if (cmd.find(recipient) != std::string::npos)
+    if (recipient.empty() || msgContent.empty())
 	{
-        std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
-        sendToUsersInChan(msg, client->getFD());
+        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "PRIVMSG", client->getNickname(), "No recipient or message given", "");
+        return;
+    }
+
+    // Add '#' if it's a channel message
+    if (recipient[0] == '#')
+	{
+        recipient = "#" + recipient;
+    }
+
+    // Check how many times the recipient appears in the command
+    size_t countChan = 0;
+    size_t pos = cmd.find(recipient);
+    
+    while (pos != std::string::npos) 
+	{
+        countChan++;
+        pos = cmd.find(recipient, pos + 1);
+    }
+
+    if (countChan > 1) 
+	{
+        std::string fullMessage = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
+        sendToUsersInChan(fullMessage, client->getFD());
         messageSend = true;
     }
-    // If the channel name is not found but there's a '#' in the command
-    if (!messageSend && cmd.find('#') != std::string::npos)
+
+    if (recipient.find('#') != std::string::npos && countChan == 1 && !messageSend) 
 	{
         std::vector<std::string> channelList;
+        size_t lastChanPos = cmd.rfind(recipient);
 
-        size_t pos = cmd.find("#");
-        while (pos != std::string::npos)
+        if (lastChanPos != std::string::npos) 
 		{
-            std::string chanName = parseChannel(cmd, pos);
-            channelList.push_back(chanName);
-            pos = cmd.find('#', pos + 1);
-        }
+            std::string msgToAll = cmd.substr(lastChanPos + recipient.size() + 2);
+            size_t pos = cmd.find("#");
 
-        for (size_t i = 0; i < channelList.size(); i++)
-		{
-            bool chanExist = false;
-            for (size_t j = 0; j < _chan.size(); ++j)
+            while (pos != std::string::npos) 
 			{
-                if (_chan[j]->getChanName() == channelList[i])
+                std::string chanName = parseChannel(cmd, pos);
+                channelList.push_back(chanName);
+                pos = cmd.find('#', pos + 1);
+            }
+
+			for (size_t i = 0; i < _chan.size(); i++) 
+			{
+				bool isChanExist = false;
+
+				for (size_t j = 0; j < _chan.size(); ++j) 
 				{
-                    if (_chan[j]->User(client))
+					if (_chan[j]->getChanName() == channelList[i]) 
 					{
-                        chanExist = true;
-                        std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + channelList[i];
-                        sendToUsersInChan(msg, client->getFD());
-                        return;
-                    }
-					if (!chanExist)
-					{
-						errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channelList[i], "", "", "");
-                		return;
+						if (_chan[j]->User(client)) 
+						{
+							isChanExist = true;
+							std::string fullMsg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + channelList[i] + " :" + msgToAll;
+							sendToUsersInChan(fullMsg, client->getFD());
+							return;
+						} 
+						else 
+						{
+							errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channelList[i], "", "", "");
+							return;
+						}
 					}
-					else
-					{
-                        errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
-                        return;
-                    }
+				}
+
+				if (!isChanExist) 
+				{
+					errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channelList[i], "", "", "");
+					return;
+				}
+			}
+        }
+    } 
+	else if (recipient.find('#') == std::string::npos)
+	{
+		size_t space = recipient.find(" ");
+
+        if (space != std::string::npos)
+		{
+            std::string nickname = recipient.substr(0, space);
+
+            for (size_t k = 0; k < _cli.size(); k++) 
+			{
+                if (nickname == _cli[k]->getNickname()) 
+				{
+                    std::string fullMessage = ":" + client->getNickname() + " " + token + " " + _cli[k]->getNickname() + " :" + msgContent;
+                    msgSend(fullMessage, _cli[k]->getFD());
+                    return;
                 }
             }
+            errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
+            return;
         }
     }
+    errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
 }
 
+// TODO
+/*
+//Should be as PRIVMSG when done
+
+void	Server::NOTICE(Client *client, Channel *channel)
+{
+	std::cout << "COMMAND NOTICE" << std::endl;
+	std::cout << "---------------" << std::endl;
+
+*/
 /*
 // parse the KICK command and extract channel, nick, and reason.
 bool Server::parseKickCommand(const std::string &kick, std::string &chan, std::string &nick, std::string &reason)
