@@ -171,43 +171,118 @@ void Server::JOIN(Client *client, Channel *channel)
 
     std::vector<std::string> channelsToJoin;
     std::string pass;
-    parseJoinCommand(cmd, channelsToJoin, pass);
+	std::string	msg;
+	std::string	name;
+	size_t		startPos = 0;
+	size_t		pos = 0;
+	bool		isChanExist = false;
 
-    if (channelsToJoin.empty())
-    {
-        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "JOIN", "Not enough parameters", "");
-        return;
-    }
+	if (cmd == ":")
+		return ;
+    //parseJoinCommand(cmd, channelsToJoin, pass);
 
-    std::vector<std::string>::iterator iter;
-    for (iter = channelsToJoin.begin(); iter != channelsToJoin.end(); ++iter)
-    {
-		std::string channelName = *iter;
-        Channel *targetChannel = findOrCreateChannel(channelName);
-        if (!targetChannel)
-            continue;
+	while ((startPos = cmd.find("#", startPos)) != std::string::npos)
+	{
+		name = parseChannel(cmd, startPos);
 
-        if (!canJoinChannel(client, targetChannel, pass))
-            continue;
+		if (name[0] != '#')
+			name = '#' + name;
+		
+		channelsToJoin.push_back(name);
 
-        targetChannel->addUser(client);
-        targetChannel->addOp(client);
+		startPos = startPos + 1;
+	}
 
-        std::string msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + targetChannel->getChanName();
-        msgSend(msg, client->getFD());
-		//sendToUsersInChan(msg, client->getFD());
+	if (channelsToJoin.empty())
+	{
+		errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "JOIN", "Not enough parameters", "");
+		return;
+	}
 
-		//msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + targetChannel->getChanName();
-        //sendToUsersInChan(msg, client->getFD());
+	if ((pos = cmd.find(" ")) != std::string::npos)
+	{
+		if (cmd.find(":") == std::string::npos)
+			pass = cmd.substr(pos + 1);
+	}
+	for (std::vector<std::string>::iterator iter = channelsToJoin.begin(); iter != channelsToJoin.end(); iter++)
+	{
+		for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
+		{
+			if (((*it)->getChanName() == (*iter)))
+			{
+				isChanExist = true;
 
-        if (!targetChannel->getTopic().empty())
-        {
-            msg = "TOPIC " + targetChannel->getChanName() + " :" + targetChannel->getTopic();
-            msgSend(msg, client->getFD());
-        }
-    }
+				if (channel->getLimitMode())
+				{
+					if (TOINT(channel->getUser().size()) >= channel->getLimit())
+					{
+						errorMsg(ERR471_CHANNELISFULL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+						return ;
+					}
+				}
+
+				if (channel->getPassMode())
+				{
+					if (pass != channel->getPassword())
+					{
+						errorMsg(ERR475_BADCHANNELKEY, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+						return ;
+					}
+				}
+
+				if (channel->getInviteMode())
+				{
+
+					if (channel->User(client))
+					{
+						errorMsg(ERR443_USERONCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
+						return ;
+					}
+
+					if (!(channel->Guest(client)))
+					{
+						errorMsg(ERR473_INVITEONLYCHAN, client->getFD(), channel->getChanName(), client->getNickname(), "", "");
+						return ;
+					}
+				}
+
+				std::cout << "Channel [" + (*iter) + "] already exist." << std::endl;
+				channels = (*it);
+				channels->addUser(client);
+				break;
+			}
+		}
+		if (!isChanExist)
+		{
+			channels = addChan((*iter));
+			std::cout << "Channel [" + (*iter) + "] created." << std::endl;
+			channels->addUser(client);
+			channels->addOp(client);
+		}
+		pos = cmd.find(" :");
+
+		if (pos != std::string::npos && (std::string::npos + 1) != (*iter).size())
+			channels->setTopic(cmd.substr(pos + 2, cmd.size()), client);
+		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*iter);
+		msgSend(msg, client->getFD());
+
+		if (!isChanExist)
+		{
+			msg = "MODE " + (*iter) + " +o "+ client->getNickname();
+			msgSend(msg, client->getFD());
+		}
+		msg = ":" + client->getNickname() + "@" + client->getHost() + " JOIN " + (*iter);
+		sendToUsersInChan(msg, client->getFD());
+
+		if (!channels->getTopic().empty())
+		{
+			msg = "TOPIC " + (*iter) + " :" + channels->getTopic();
+			msgSend(msg, client->getFD());
+			sendToUsersInChan(msg, client->getFD());
+		}
+	}
 }
-
+/*
 void Server::parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass)
 {
     size_t start = command.find("#");
@@ -300,7 +375,7 @@ std::vector<std::string> Server::splitChannels(const std::string &channelList)
     }
     return channels;
 }
-
+*/
 void Server::PART(Client *client, Channel *channel)
 {
 	std::cout << GREEN << "COMMAND PART" << RESET << std::endl;
@@ -314,7 +389,7 @@ void Server::PART(Client *client, Channel *channel)
     }
     // cleanup the clients from the channel
     cleanupClients(client, channel);
-    std::cout << "Users that are still on the channel: " << channel->getUser().size() << std::endl;
+    	std::cout << "Users that are still on the channel: " << channel->getUser().size() << std::endl;
     std::string partMsg = ":" + client->getNickname() + "@" + client->getHost() + " PART " + channel->getChanName();
      msgSend(partMsg, client->getFD());
     // If there are still members in the channel, send the message to them
@@ -401,47 +476,65 @@ void Server::QUIT(Client *client, Channel *channel)
 	}
 }
 
-void Server::KICK(Client *client, Channel *channel)
+void Server::KICK(Client* client, Channel* channel)
 {
-    std::cout << "COMMAND KICK" << std::endl;
-	std::cout << "-------------" << std::endl;
-
-	std::string chan = parseChannel(cmd, 0);
-	//std::string kick;
-
-	if (channel->Op(client) == true)
+    // Check if the user is an operator in the channel
+    if (channel->Op(client) == true)
 	{
-		if (!chanExist(chan))
-			errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
-		size_t doubleColonPos = cmd.find(':');
-		std::string reason = cmd.substr(doubleColonPos + 1);
-		size_t nickStart = cmd.find(chan) + chan.size() + 1; 
-		size_t nickEnd = cmd.find(" :");
-		std::string nick = cmd.substr(nickStart, nickEnd - nickStart);
-		if (!channel->User(client))
+        //errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
+		//std::string msg = channel->getChanName() + " You must be a channel operator";
+        //return;
+    //}
+
+    // Parse the KICK command
+    	std::string recipient;
+		std::string reason;
+		size_t doubleColonPos = cmd.find(" :");
+		if (doubleColonPos != std::string::npos)
 		{
-			errorMsg(ERR442_NOTONCHANNEL, client->getFD(), channel->getChanName(), "", "", "");
+			recipient = cmd.substr(cmd.find(channel->getChanName()) + channel->getChanName().size() + 1, doubleColonPos - cmd.find(channel->getChanName()) - channel->getChanName().size() - 1);
+			reason = cmd.substr(doubleColonPos + 2);
+		} 
+		else 
+		{
+			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "KICK", "", "", "");
 			return;
 		}
-		if (!channel->nickMember(nick))
+
+		// Check if the recipient is in the channel
+		bool recipientFound = false;
+		for (std::vector<Client*>::iterator it = channel->getUser().begin(); it != channel->getUser().end(); ++it)
 		{
-			errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), client->getNickname(), channel->getChanName(), "", "");
-			return;
+			if ((*it)->getNickname() == recipient)
+			{
+				recipientFound = true;
+
+				std::string kickMsg = ":" + client->getNickname() + " KICK " + channel->getChanName() + " " + recipient + " :" + reason;
+				msgSend(kickMsg, client->getFD());
+
+				int recipientFD = (*it)->getFD();
+
+				it = channel->getUser().erase(it);
+				
+				std::string notifyMsg = ":" + client->getNickname() + "!" + client->getUsername() + "@" + client->getHost() + " KICK " + channel->getChanName() + " " + recipient + " :" + reason;
+				sendToUsersInChan(notifyMsg, client->getFD());
+				close(recipientFD);
+
+				break;
+			}
 		}
-		std::string msg = ':' + client->getNickname() + "!~" + client->getHost() + ' ' + token + ' ' + chan + ' ' + nick + " :" + reason;
-		if (chan.empty() || nick.empty())
-			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), chan, nick, "", "");
-		else
+
+		if (!recipientFound)
 		{
-			msgSend(msg, client->getFD());
-			sendToUsersInChan(msg, client->getFD());
+			errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), recipient, channel->getChanName(), "", "");
 		}
 	}
-	else 
+	else
 	{
-		std::string errorMsg = "482 " + client->getNickname() + " " + channel->getChanName() + " :You're not a channel operator";
-    	msgSend(errorMsg, client->getFD());
-		//errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), chan, "Not allowed", "");
+		errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
+        //std::string errorMsg = channel->getChanName() + " :You must be a channel operator!";
+        //sendToUsersInChan(errorMsg, client->getFD());
+		//return ;
 	}
 }
 
@@ -468,25 +561,25 @@ void Server::INVITE(Client* client, Channel* channel)
 		{
             chanName = cmd.substr(chan);
         }
-        if (!chanExist(chanName))
+        if (chanExist(chanName) == 0)
 		{
             std::cout << "Channel does not exist" << std::endl;
             errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), chanName, "", "", "");
             return;
         }
-        if (!channel->User(client))
+        if (channel->User(client) == false)
 		{
             errorMsg(ERR442_NOTONCHANNEL, client->getFD(), chanName, "", "", "");
         }
-        else if (!channel->User(client))
+        else if (channel->User(client) == false)
 		{
             errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), chanName, "", "", "");
         }
-        else if (!nickExist(invited))
+        else if (nickExist(invited) == false)
 		{
             errorMsg(ERR401_NOSUCHNICK, client->getFD(), invited, "", "", "");
         }
-        else if (channel->nickMember(invited))
+        else if (channel->nickMember(invited) == true)
 		{
             errorMsg(ERR441_USERNOTINCHANNEL, client->getFD(), chanName, invited, "", "");
         } 

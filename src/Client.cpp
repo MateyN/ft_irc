@@ -58,7 +58,7 @@ void	Client::setUser(std::string user)
 	_username = user;
 }
 
-std::string	Client::getUser()
+std::string	Client::getUsername()
 {
 	return _username;
 }

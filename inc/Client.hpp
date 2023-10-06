@@ -30,7 +30,7 @@ class Client
 		void		setNickname(std::string nick);
 		bool		isConnect();
 		void		setUser(std::string user);
-		std::string	getUser();
+		std::string	getUsername();
 
 		std::string	getHost();
 		bool isRegister();

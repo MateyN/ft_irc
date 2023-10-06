@@ -20,7 +20,7 @@ class Channel
 			std::string					getTopic() { return _topic; }
 			std::string					getPassword() { return _password; }
 			std::string					getUsers();
-			std::vector<Client*>		getUser() { return _usr; }
+			std::vector<Client*>&		getUser() { return _usr; }
 			int							getLimit();
 			bool						getTopicMode();
 			bool						getLimitMode();

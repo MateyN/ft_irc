@@ -221,10 +221,17 @@ bool Channel::addOp(Client *client)
 
     if (user)
     {
+		//for (std::vector<Client*>::iterator itc = _op.begin(); itc != _op.end(); itc++)
+		//{
+		//	if (client->getFD() == (*itc)->getFD())
+		//	{
+		//		std::cout << "Already an operator -> " + (*itc)->getNickname() << std::endl;
+		//		return (false);
+		//	}
+		//}
         _op.push_back(client);
         return (true);
     }
-
     std::cout << "Not a member -> " + client->getNickname() << std::endl;
     return (false);
 }
@@ -289,7 +296,6 @@ bool	Channel::nickMember(std::string nickname)
 	}
 	return false;
 }
-
 
 bool	Channel::Guest(Client *client)
 {

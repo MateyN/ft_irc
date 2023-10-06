@@ -30,6 +30,7 @@
 # define MAX_CLIENTS 32		// backlog
 # define CRLF "\r\n"
 # define TOSTR(a) static_cast<std::string>(a)
+# define TOINT(a) static_cast<int>(a)
 # define RESET   "\033[0m"
 # define BLACK   "\033[30m"      /* Black */
 # define RED     "\033[31m"      /* Red */
