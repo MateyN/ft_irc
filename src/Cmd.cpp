@@ -566,102 +566,86 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
     std::string recipient = cmd.substr(1, msgStart - 1);
     std::string msgContent = cmd.substr(msgStart + 1);
 
-    if (recipient.empty() || msgContent.empty())
+    recipient = '#' + recipient;
+    if (cmd.find(recipient) != std::string::npos)
 	{
-        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "PRIVMSG", client->getNickname(), "No recipient or message given", "");
-        return;
-    }
-
-    // Add '#' if it's a channel message
-    if (recipient[0] == '#')
-	{
-        recipient = "#" + recipient;
-    }
-
-    // Check how many times the recipient appears in the command
-    size_t countChan = 0;
-    size_t pos = cmd.find(recipient);
-    
-    while (pos != std::string::npos) 
-	{
-        countChan++;
-        pos = cmd.find(recipient, pos + 1);
-    }
-
-    if (countChan > 1) 
-	{
-        std::string fullMessage = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
-        sendToUsersInChan(fullMessage, client->getFD());
+        std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
+        sendToUsersInChan(msg, client->getFD());
         messageSend = true;
     }
-
-    if (recipient.find('#') != std::string::npos && countChan == 1 && !messageSend) 
+    // If the channel name is not found but there's a '#' in the command
+    if (!messageSend && cmd.find('#') != std::string::npos)
 	{
-        std::vector<std::string> channelList;
-        size_t lastChanPos = cmd.rfind(recipient);
+        std::vector<std::string>	channelList;
+		std::string					msgToAll;
 
-        if (lastChanPos != std::string::npos) 
+        size_t pos = cmd.find("#");
+        while (pos != std::string::npos)
 		{
-            std::string msgToAll = cmd.substr(lastChanPos + recipient.size() + 2);
-            size_t pos = cmd.find("#");
-
-            while (pos != std::string::npos) 
-			{
-                std::string chanName = parseChannel(cmd, pos);
-                channelList.push_back(chanName);
-                pos = cmd.find('#', pos + 1);
-            }
-
-			for (size_t i = 0; i < _chan.size(); i++) 
-			{
-				bool isChanExist = false;
-
-				for (size_t j = 0; j < _chan.size(); ++j) 
-				{
-					if (_chan[j]->getChanName() == channelList[i]) 
-					{
-						if (_chan[j]->User(client)) 
-						{
-							isChanExist = true;
-							std::string fullMsg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + channelList[i] + " :" + msgToAll;
-							sendToUsersInChan(fullMsg, client->getFD());
-							return;
-						} 
-						else 
-						{
-							errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channelList[i], "", "", "");
-							return;
-						}
-					}
-				}
-
-				if (!isChanExist) 
-				{
-					errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channelList[i], "", "", "");
-					return;
-				}
-			}
+            std::string chanName = parseChannel(cmd, pos);
+            channelList.push_back(chanName);
+            pos = cmd.find('#', pos + 1);
         }
-    } 
-	else if (recipient.find('#') == std::string::npos)
-	{
-		size_t space = recipient.find(" ");
 
-        if (space != std::string::npos)
+		if (!channelList.empty())
 		{
-            std::string nickname = recipient.substr(0, space);
-
-            for (size_t k = 0; k < _cli.size(); k++) 
+            std::string lastChanName = channelList.back();
+            std::size_t lastChanPos = cmd.rfind(lastChanName);
+            if (lastChanPos != std::string::npos) 
 			{
-                if (nickname == _cli[k]->getNickname()) 
+                msgToAll = cmd.substr(lastChanPos + lastChanName.size() + 2);
+            }
+        }
+         for (size_t i = 0; i < channelList.size(); i++)
+		 {
+            bool isChanExist = false;
+            for (size_t j = 0; j < _chan.size(); ++j)
+			{
+                if (_chan[j]->getChanName() == channelList[i])
 				{
-                    std::string fullMessage = ":" + client->getNickname() + " " + token + " " + _cli[k]->getNickname() + " :" + msgContent;
-                    msgSend(fullMessage, _cli[k]->getFD());
-                    return;
+                    if (_chan[j]->User(client))
+					{
+                        isChanExist = true;
+                        std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + channelList[i] + " :" + msgToAll;
+                        sendToUsersInChan(msg, client->getFD());
+                        return;
+                    } 
+					else 
+					{
+                        errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
+                        return;
+                    }
                 }
             }
-            errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
-            return;
+            if (!isChanExist) 
+			{
+                errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), channelList[i], "", "", "");
+                return;
+            }
+        }
+    } 
+	else if (cmd.find('#') == std::string::npos) 
+	{
+        std::size_t startPos = cmd.find(":");
+        if (startPos != std::string::npos) 
+		{
+            std::string priv = cmd.substr(startPos + 1);
+            std::size_t nick = cmd.find(" ");
+            if (nick != std::string::npos) 
+			{
+                std::string nickname = cmd.substr(0, nick);
+                for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); it++) 
+				{
+                    if (nickname == (*it)->getNickname()) 
+					{
+                        std::string privmsg = ":" + client->getNickname() + " " + token + " " + (*it)->getNickname() + " :" + priv;
+                        msgSend(privmsg, (*it)->getFD());
+                        return;
+                    }
+                }
+                errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
+                return;
+            }
         }
     }
     errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
