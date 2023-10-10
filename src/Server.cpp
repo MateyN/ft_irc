@@ -133,7 +133,6 @@ bool	Server::serverConnect()
 				{
 					addrlen = sizeof(_addr);
 					cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
-
 					if (cliSocket != ERROR)
 								// KR : add MAXCLIENT here ???
 					{
@@ -151,6 +150,7 @@ bool	Server::serverConnect()
 				}
 				else
 				{
+					// received
 					bzero(&buf, sizeof(buf));
 
 					int	storedBytes = recv(_pfds[i].fd, buf, sizeof(buf), 0); // receive and store data
@@ -174,9 +174,7 @@ bool	Server::serverConnect()
 					if (storedBytes <= 0)
 					{
 						if (storedBytes == 0)
-						{
 							std::cout << RED << "Socket number: " << send << " has been disconnected." << RESET << std::endl;
-						}
 						else
 							std::cout << ERRNOMSG << strerror(errno) << std::endl;
 
@@ -343,6 +341,7 @@ void	Server::isCAP(Client *client)
 {
 	if (connect(client->getFD(), (struct sockaddr*)&_addr, sizeof(_addr)) < 0)
 	{
+		// KR: why saying this when first ever client?
 		std::cerr <<  "there is another connection\r\n"  << std::endl;
 		msgSend("PING\r\n", client->getFD());
 		return;
