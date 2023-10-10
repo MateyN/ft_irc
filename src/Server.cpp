@@ -1,268 +1,360 @@
-#include "../inc/Client.hpp"
 #include "../inc/Server.hpp"
-#include "../inc/Channel.hpp"
+#include "../inc/Client.hpp"
+#include "../inc/Message.hpp"
 
-Server::Server():   validPass(false), _socket(0), _port(0)
+
+Server::Server(): validPass(false), _socket(0), _auth(0), _port(0)
 {
 
+}
+
+Server::Server(const Server &src)
+{
+	*this = src;
 }
 
 // Copy assignment operator
-Server& Server::operator=(Server const & rhs)
+Server& Server::operator=(const Server &rhs)
 {
-    setNick = rhs.setNick;
-    validPass = rhs.validPass;
-    token = rhs.token;
-    cmd = rhs.cmd;
-    _port = rhs._port;
-    _socket = rhs._socket;
-    password = rhs.password;
-    _addr = rhs._addr;
+	token = rhs.token;
+	cmd = rhs.cmd;
+	setNick = rhs.setNick;
+	validPass = rhs.validPass;
 
-    return *this;
-}
+	_socket = rhs._socket;
+	_auth = rhs._auth;
+	_port = rhs._port;
+	_addr = rhs._addr;
+	_sockets = rhs._sockets;
+	_pfds = rhs._pfds;
+	_cli = rhs._cli;
+	_chan = rhs._chan;
+	_password = rhs._password;
 
-Server::Server(const Server& src)
-{
-    *this = src;
+	return *this;
 }
 
 // Default Destructor 
-Server::~Server(void)
+Server::~Server()
 {
-    if (client != NULL)
+    for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
     {
-        delete client;
-        client = NULL;
+        delete *it;
     }
-	//std::cout << "Destructor Server Called" << std::endl;
-	//return;
+    _cli.clear();
+    for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
+    {
+        delete *it;
+    }
+    _chan.clear();
 }
 
-// Getters
-std::string Server::getPass()
+
+void	Server::setPort(int port)
 {
-    return password;
+	_port = port;
 }
 
-int Server::getSocket()
+int		Server::getPort()
 {
-    return (_socket);
+	return (_port);
 }
 
-int Server::getPort()
+bool	Server::setupServerSocket()
 {
-    return (_port);
-}
+	int	clientSocket;
 
-// Setters
-void    Server::setPort(int port)
-{
-    _port = port;
-}
+	_socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (_socket == ERROR)
+		throw (Server::ExceptionServer(ERRNOMSG"SOCK_STREAM"));
 
-void    Server::setPass(std::string pass)
-{
-    password = pass;
-}
+	int	opt_len = 1;
+	clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof(opt_len));
+	if (clientSocket == ERROR)
+		throw (Server::ExceptionServer(ERRNOMSG"socket"));
+	// Set client socket to non-blocking
+	clientSocket = fcntl(_socket, F_SETFL, O_NONBLOCK);
+	if (_socket == ERROR)
+		throw (Server::ExceptionServer(ERRNOMSG"setsockopt"));
 
-bool    Server::setupServerSocket()
-{
-    int clientSocket;
-    int opt_len;
+	_sockets.push_back(_socket);
 
-    _socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (_socket == ERROR)
-		throw (Server::ExceptionServer(ERRNOMSG"error: SOCK_STREAM"));
-
-    // Set client socket to non-blocking
-    clientSocket = fcntl(_socket, F_SETFL, O_NONBLOCK);
-    if (_socket == ERROR)
-        throw (Server::ExceptionServer(ERRNOMSG"error: socket"));
-
-    clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof (opt_len) + 1);
-    if (clientSocket == ERROR)
-        throw (Server::ExceptionServer(ERRNOMSG"error: setsockopt"));
-    
-    memset(&_addr, 0, sizeof _addr);
-    _addr.sin_family = AF_UNSPEC;		// don't care IPv4 or IPv6, AF = Address Family
+	bzero(&_addr, sizeof(_addr));
+	_addr.sin_family = AF_UNSPEC;
 	_addr.sin_addr.s_addr = INADDR_ANY; // setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
 	_addr.sin_port = htons(_port); // setting the server's port number & converts it to network byte order.
 
-    clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
-    if (clientSocket == ERROR)
-        throw (Server::ExceptionServer(ERRNOMSG"error: fail bind"));
+	clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
+	if (clientSocket == ERROR)
+	{
+		perror("bind");
+		throw (Server::ExceptionServer(ERRNOMSG"fail bind"));
+	}
 
-    clientSocket = listen(_socket, MAX_CLIENTS);
-    if (clientSocket == ERROR)
-        throw (Server::ExceptionServer(ERRNOMSG"error: fail listen"));
-
-        return (true);
+	clientSocket = listen(_socket, MAX_CLIENTS);
+	if (clientSocket == ERROR)
+		throw (Server::ExceptionServer(ERRNOMSG "fail listen"));
+	return (true);
 }
 
-void    Server::initServSocket()
+int	Server::getSocket()
 {
-    pollfd  pfds;
-    memset(&pfds, 0, sizeof(pfds));
-    pfds.fd = _socket;
-    pfds.events = POLLIN;
-    _pfds.push_back(pfds);
+	return (_socket);
 }
 
-// handling client connections and data reception.
-bool    Server::serverConnect()
+bool	Server::serverConnect()
 {
-    initServSocket();
-    //int nfds;
-    while(true)
+	// init a new pollfd struct to monitor the client's socket
+	pollfd		pfdc;
+	int			cliSocket;
+	int			pollResult;
+	char		buf[250];
+	socklen_t	addrlen;
+	std::map<int, std::string>	msg;
+
+	channels = NULL;
+	bzero(&pfdc, sizeof(pfdc));
+	pfdc.fd = _socket;
+	pfdc.events = POLLIN;
+	_pfds.push_back(pfdc);
+
+	while (true)
+	{
+		pollResult = poll(_pfds.data(), _pfds.size(), -1);
+
+		if (pollResult == ERROR)
+			std::cout << ERRNOMSG << strerror(errno) << std::endl;
+
+		for (unsigned int i = 0; i < _pfds.size(); i++)
+		{
+			if (_pfds[i].revents & POLLIN)
+			{
+				if (_pfds[i].fd == _socket)
+				{
+					addrlen = sizeof(_addr);
+					cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
+
+					if (cliSocket != ERROR)
+								// KR : add MAXCLIENT here ???
+					{
+						pfdc.fd = cliSocket;
+						pfdc.events = POLLIN;
+						_pfds.push_back(pfdc);
+						clients = addClient(cliSocket); // create and init a new client obj
+								// KR : put client to _cli vector ?
+						std::cout << CYAN << "New client connected" << RESET << std::endl;
+						isCAP(clients);
+					}
+					else
+						std::cout << ERRNOMSG << strerror(errno) << std::endl;
+				}
+				else
+				{
+					bzero(&buf, sizeof(buf));
+
+					int	storedBytes = recv(_pfds[i].fd, buf, sizeof(buf), 0); // receive and store data
+					for (std::vector<Client*>::iterator	it = _cli.begin(); it != _cli.end(); it++)
+					{
+						if ((*it)->getFD() == _pfds[i].fd)
+						{
+							clients = (*it);
+							break;
+						}
+					}
+					int	send = _pfds[i].fd;
+					msg[send] += TOSTR(buf);
+					std::string	completeMsg = msg[send].substr(0, msg[send].find(CRLF));
+					channels = getChan(completeMsg);
+					if (TOSTR(buf).find("\n") != std::string::npos)
+					{
+						processRecvData(msg[send], clients, channels);
+						msg[send].clear();
+					}
+					if (storedBytes <= 0)
+					{
+						if (storedBytes == 0)
+						{
+							std::cout << RED << "Socket number: " << send << " has been disconnected." << RESET << std::endl;
+						}
+						else
+							std::cout << ERRNOMSG << strerror(errno) << std::endl;
+
+						for (std::vector<Client*>::iterator	it = _cli.begin(); it != _cli.end(); it++)
+						{
+							if ((*it)->getFD() == _pfds[i].fd)
+							{
+								for (std::vector<Channel*>::iterator itc = _chan.begin(); itc != _chan.end(); itc++)
+								{
+									if ((*itc)->User(*it))
+										(*itc)->eraseUser((*it), (*it)->getFD());
+
+									if ((*itc)->Op(*it))
+										((*itc)->eraseOp(*it));
+
+									if ((*itc)->Guest(*it))
+										((*itc)->eraseGuest(*it));
+								}
+								delete (*it);
+								_cli.erase(it);
+								break;
+							}
+						}
+						msg[_pfds[i].fd].clear();
+						close(_pfds[i].fd);
+						_pfds.erase(_pfds.begin() + i);
+						i--;
+					}
+					else
+					{
+						continue;
+					}
+				}
+			}
+		}
+	}
+}
+
+void Server::parseCmd(std::string buf)
+{
+    token.clear();
+    cmd.clear();
+
+    size_t space = buf.find(' ');
+    if (space != std::string::npos)
     {
-        // waiting for events
-       int pollResult = poll(_pfds.data(), _pfds.size(), -1); // -1 listen for incoming data or client connections without timeout
-       if (pollResult == ERROR)
-            throw (Server::ExceptionServer(ERRNOMSG"error: poll()"));
-        if (pollResult > 0) // if there are events to process
-        {
-            for (size_t i = 0; i < _pfds.size(); i++)
-            {
-                if (_pfds[i].revents & POLLIN) // checks if the event data is ready to be read
-                {
-                    if (_pfds[i].fd == _socket) // KR not here
-                    {
-                        newClientConnect();
-                    }
-                    else
-                    {
-                        clientData(_pfds[i]);
-                    }
-                }
-            }
-        }
-    }
-}
-
-void    Server::newClientConnect()
-{
-    socklen_t   addrlen = sizeof(_addr);
-    int         cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen); // store the client socket
-
-    if (cliSocket != ERROR)
-		// KR : add MAXCLIENT here ???
-    {
-        // init a new pollfd struct to monitor the client's socket
-        pollfd  pfdc;
-        memset(&pfdc, 0, sizeof(pfdc));
-        pfdc.fd = cliSocket;
-        pfdc.events = POLLIN;
-        _pfds.push_back(pfdc); // add the pollfd struct for event monitoring
-
-        client = addClient(cliSocket); // create and init a new client obj
-		// KR : put client to _cli vector ?
-        std::cout << "New client connected" << std::endl;
+        token = buf.substr(0, space);
+        cmd = buf.substr(space + 1);
     }
     else
-        throw (Server::ExceptionServer(ERRNOMSG"error: accept()"));
-}
-
-// handling data received from a client
-void    Server::clientData(pollfd &pfdc)
-{
-    char    buf[500];
-    int     storedBytes = recv(pfdc.fd, buf, sizeof(buf), 0); // receive and store data
-
-    if (storedBytes <= 0) // if no data received or connected client
     {
-		clientDisc(pfdc.fd);
-    }
-    else
-    {
-        processRecvData(pfdc.fd, buf, storedBytes); // process what is received
+        token = buf;
     }
 }
 
-void    Server::processRecvData(int send, char *data, int size)
+void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 {
-    std::string recvData(data, size);
-    // add the received data to the message buffer for the sender
-    msgBuffer[send] += recvData;
-	std::cout << "*** processRecvData: " << std::endl <<
-		"send:" << send << std::endl <<
-		"data:" << data << std::endl <<
-		"size:" << size << std::endl;
-    // checks if the received data contains a complete message
-    size_t  findEnd = msgBuffer[send].find("\r\n");
-    while (findEnd != std::string::npos)
-    {
-        std::string completeMsg = msgBuffer[send].substr(0, findEnd);
-        // removing the processed message from the buffer
-        msgBuffer[send].erase(0, findEnd + sizeof("\r\n"));
-        // finding the next complete message in the buffer
-        findEnd = msgBuffer[send].find("\r\n");
-		/* std::cout << "completemsg: " << completeMsg << std::endl; */
-		/* std::cout << "msgbuffer: " << msgBuffer[send] << std::endl; */
-		/* std::cout << "findend: " << findEnd << std::endl; */
-    }
+	size_t pos = buf.find(CRLF);
+
+	while (pos != std::string::npos)
+	{
+		std::string line = buf.substr(0, pos);
+		buf.erase(0, pos + 2);
+		pos = buf.find(CRLF);
+
+		std::cout << YELLOW << "Received -> " << RESET << line << std::endl;
+		if (!line.empty())
+		{
+			parseCmd(line);
+			callCmd(token, client, channel);
+		}
+		else
+			errorMsg(461, client->getFD(), "", "", "", "");
+	}
 }
 
-// handling the client disconnection
-void    Server::clientDisc(int pfdc)
+Client* Server::addClient(int fd)
 {
-    for (size_t i = 0; i < _pfds.size(); i++)
-    {
-        if (_pfds[i].fd == pfdc) // checks for matching poll struct for the disc client
-        {
-            for (std::vector<Client *>:: iterator cli = _cli.begin(); cli != _cli.end(); cli++)
-            {
-                if ((*cli)->getFD() == pfdc)
-                {
-                    clientsErase(*cli); // cleanup disc clients
-                    break;
-                }
-            }
-            _pfds.erase(_pfds.begin() + i); // removing pollfd struct with the disc. client
-            break ;
-        }
-    }
+	Client* client = new Client(fd);
+	_cli.push_back(client);
+	return client;
 }
 
-// cleaning up 
-void    Server::clientsErase(Client *client)
+Channel* Server::addChan(std::string name)
 {
-    for (std::vector<Channel *>::iterator iter = _chan.begin(); iter != _chan.end(); iter++)
-    {
-        if ((*iter)->User(client)) // checks if its a user
-        {
-            (*iter)->eraseUser(client, client->getFD());
-        }
-        if ((*iter)->Op(client)) // checks if its an operator in the channnel or not
-        {
-            (*iter)->eraseOp(client, client->getFD());
-        }
-    }
-    delete client;
-    _cli.erase(std::remove(_cli.begin(), _cli.end(), client), _cli.end()); // remove the client pointer from the list
+	Channel* channel = new Channel(name);
+	_chan.push_back(channel);
+	return channel;
 }
 
-
-Client *Server::addClient(int fd)
+void	Server::chanErase(Channel *chan)
 {
-    Client  *client = new Client(fd);
-    return client;
+	for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
+	{
+		if (chan->getChanName() == (*it)->getChanName())
+		{
+			_chan.erase(it);
+			break;
+		}
+	}
 }
 
-Channel *Server::addChan(std::string name, Client* op)
+std::string Server::parseChannel(std::string input, size_t start)
 {
-    Channel *chan = new Channel(name, op);
-    return chan;
+	std::string	chanName;
+	size_t		space;
+	size_t		comma;
+	size_t		end;
+
+	if (start == 0)
+		start = input.find("#");
+
+	if (start != std::string::npos && start != input.size() - 1)
+	{
+		space = input.find(" ", start);
+		comma = input.find(",", start);
+
+		end = std::min(space, comma);
+		if (end == std::string::npos)
+			end = input.size();
+		chanName = input.substr(start, end - start);
+	}
+	else
+		chanName = input;
+	return chanName;
 }
 
-void    Server::chanErase(Channel *chan)
+Channel*	Server::getChan(std::string msg)
 {
-    for (std::vector<Channel *>::iterator iter = _chan.begin(); iter != _chan.end(); iter++)
-    {
-        if (chan->getChanName() == (*iter)->getChanName())
-        {
-            _chan.erase(iter);
-            break;
-        }
-    }
+	std::string		chanName;
+
+	chanName = parseChannel(msg, 0);
+
+	for(std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
+	{
+		if ((*it)->getChanName() == chanName)
+			return (*it);
+	}
+	return (NULL);
+}
+
+std::string	Server::getPassword()
+{
+	return _password;
+}
+
+void	Server::setPass(std::string pass) 
+{
+	_password = pass;
+}
+
+void	Server::isCAP(Client *client)
+{
+	if (connect(client->getFD(), (struct sockaddr*)&_addr, sizeof(_addr)) < 0)
+	{
+		std::cerr <<  "there is another connection"  << std::endl;
+		msgSend("PING", client->getFD());
+		return;
+	}
+}
+
+bool	Server::chanExist(std::string channel)
+{
+	for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
+	{
+		if ((*it)->getChanName() == channel)
+			return true;
+	}
+	return false;
+}
+
+bool	Server::nickExist(std::string nick)
+{
+	for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); ++it)
+	{
+		if ((*it)->getNickname() == nick) 
+		{
+			return true;
+		}
+	}
+	return false;
 }

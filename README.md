@@ -7,56 +7,46 @@
 	- [X] do not develop a client
 	- [X] do not handle communication server-server
 	- [X] ./ircserv <port> <password>
-	- [ ] poll() OR select() OR kqueue() OR epoll()
-	- [ ] simultaneously handle multiple clients without blocking ([non-blocking tcp tuto](https://bousk.developpez.com/cours/reseau-c++/TCP/06-client-non-bloquant/))
+	- [X] poll() OR select() OR kqueue() OR epoll()
+	- [X] simultaneously handle multiple clients without blocking ([non-blocking tcp tuto](https://bousk.developpez.com/cours/reseau-c++/TCP/06-client-non-bloquant/))
 	- [X] no fork
-	- [ ] only ONE poll() to handle read(), write(), listen(), etc.
-	- [ ] do not use read/recv or write/send with any FD without using poll()
+	- [X] only ONE poll() to handle read(), write(), listen(), etc.
+	- [X] do not use read/recv or write/send with any FD without using poll()
 	- [X] choose one of the multiple client IRC as a reference ([irssi](https://irssi.org/)), but your reference client will be used during the assessment
-	- [ ] the reference client must connect to server without errors
-	- [ ] client-server communication is TCP/IP (v4 or v6)
+	- [X] the reference client must connect to server without errors
+	- [X] client-server communication is TCP/IP (v4 or v6)
 	- [ ] reference client must have those functionalities :
-		- [ ] authentification
-		- [ ] define nickname TO TEST
-		- [ ] define username TO TEST
-		- [ ] join channel TO TEST
-		- [ ] send private message (PM) TO TEST
-		- [ ] receive PM TO TEST
-		- [ ] all sent messages in a channel must be transmitted to all clients who joined this specific channel TO TEST
-		- [ ] we must have operators and basic users
+		- [X] authentification
+		- [X] define nickname
+		- [X] define username
+		- [X] join channel
+		- [ ] send private message (PM) TO DO
+		- [ ] receive PM TO DO
+		- [X] all sent messages in a channel must be transmitted to all clients who joined this specific channel
+		- [X] we must have operators and basic users
 		- [ ] implement specific commands to channel operators :
-			- [ ] KICK : kick client from chan
-			- [ ] INVITE : invite client to chan
-			- [ ] TOPIC : modify or display chan theme
-			- [ ] MODE :
+			- [X] KICK : kick client from chan
+			- [ ] INVITE : invite client to chan TO TEST
+			- [X] TOPIC : modify or display chan theme
+			- [ ] MODE : TO DO
 				- [ ] -i : define/delete chan as invitation only
 				- [ ] -t : define/delete restrictions on TOPIC comand for chan operators
 				- [ ] -k : define/delete password chan
 				- [ ] -o : give/remove operator chan privilege
 				- [ ] -l : define/delete Nmax users for this chan
-	- [ ] fcntl(fd, F_SETFL, O_NONBLOCK) instead of write() (MACOS), use file descriptors in non-blocking fd ([tuto](https://www.linuxtoday.com/blog/blocking-and-non-blocking-i-0/))
+	- [X] fcntl(fd, F_SETFL, O_NONBLOCK) instead of write() (MACOS), use file descriptors in non-blocking fd ([tuto](https://www.linuxtoday.com/blog/blocking-and-non-blocking-i-0/))
 	- [ ] tests / error handling :
 		- [ ] server : partially received data
 		- [ ] weak bandwidth
-		- [ ] nc 127.0.0.1 6667 (see subject)
+		- [X] nc 127.0.0.1 6667 (see subject)
 - [ ] server :
-	- [ ] create a server
-	- [ ] make the access to the server password-protected
-	- [ ] receive clients
+	- [X] create a server
+	- [X] make the access to the server password-protected
+	- [X] receive clients
 - [ ] client :
-	- [ ] choose which client to use ([irssi](https://irssi.org/) ?)
-	- [ ] connect to port password :
+	- [X] choose which client to use ([irssi](https://irssi.org/) ?)
+	- [X] connect to port password :
 		- [ ] *register* its connection (NICK, USER)
-
-# Schedule
-
-| date  | milestone                               |
-|-------|-----------------------------------------|
-| 15.08 | read rfc 1-3,4,6                        |
-| 22.08 | handling multiple clients               |
-| 29.08 | standalone irc server complete          |
-| 05.09 | standalone irc server tested thoroughly |
-| 12.09 | push                                    |
 
 # Doc
 
@@ -65,26 +55,26 @@
 	- Allow communication bw two processes on the same or different machines : a way to talk to other computers using std Unix file descriptors.
 - [RFC1459 (Oikarinen & Reed, 1993)](https://datatracker.ietf.org/doc/html/rfc1459)
 	- [X] Client have a unique nickname having a max(9) char
-	- [ ] All servers must have : real name of the host that the cleint is running on, the username of the client on that host, and the server to whih the client is connected
+	- [X] All servers must have : real name of the host that the client is running on, the username of the client on that host, and the server to which the client is connected
 	- Operators (special class of clients) perform general maintenance functions on the network
-	- [ ] Channel is created implicitly when the first client joins it (and becomes the operator, named 'chop' | 'chanop') and ceases to exist when the last client leaves it
-	- [ ] Channel name = string beginning with '&' or '#' and maxlen = 200, no spaces, no ^G or ASCII 7 or ',' (= list item separator by the protocol)
-	- [ ] Distributed channel (&) = known to all
-	- [ ] A limit of 10 channels for a client to be part of
-	- [ ] Chop is identified by the '@' symbol 
+	- [X] Channel is created implicitly when the first client joins it (and becomes the operator, named 'chop' | 'chanop') and ceases to exist when the last client leaves it
+	- [X] Channel name = string beginning with '&' or '#' and maxlen = 200, no spaces, no ^G or ASCII 7 or ',' (= list item separator by the protocol)
+	- [ ] Distributed channel (&) = known to all TO CHECK
+	- [ ] A limit of 10 channels for a client to be part of TO CHECK?
+	- [X] Chop is identified by the '@' symbol 
 	- [ ] {}| are lowercase equivalents of []\ (critical when determining the equivalence of two nicknames)
-	- [ ] make an error when msg begins with ':', say : "error: no prefix begining by ':' is allowed"
-	- [ ] IRC messages are always lines of char terminated with a CR-LF (carriage return - line feed) pair, and these messages shall not exceed 512 char couting all char including the CR-LF (\r\n, so max 510 for command and its params)
+	- [X] make an error when msg begins with ':', say : "error: no prefix begining by ':' is allowed"
+	- [X] IRC messages are always lines of char terminated with a CR-LF (carriage return - line feed) pair, and these messages shall not exceed 512 char couting all char including the CR-LF (\r\n, so max 510 for command and its params)
 	- [ ] See BNF (Backus-Naur form) for the messages
 - [RFC2810 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2810)
 - [RFC2811 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2811)
 - [RFC2812 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2812)
 	- Labels :
-		- [ ] when connecting, client unique id and the server which introduced the client
+		- [X] when connecting, client unique id and the server which introduced the client
 		- [ ] allow operators who can :
-			- [ ] disconnect and reconnect servers (see if applicable)
-			- [ ] remove a user from server (KILL?)
-		- [ ] channels begin with #, case insensitive
+			- [X] disconnect and reconnect servers (see if applicable)
+			- [X] remove a user from server (KICK)
+		- [X] channels begin with #, case insensitive
 - [RFC2813 (Kalt, 2000)](https://datatracker.ietf.org/doc/html/rfc2813)
 - [UChicago X-Projects Tutorial](http://chi.cs.uchicago.edu/chirc/irc.html)
 - [How to make an IRC server connection (Sotiriou, 2008)](https://oramind.com/tutorial-how-to-make-an-irc-server-connection/)
@@ -106,7 +96,7 @@
 	- [ ] read 4 and 6 of RFC 1459 (high level)
 	- [ ] return to 1-3 with implementation eyes + think about data structures to maintiain, what info needs to be stored about each client ?
 	- [ ] start with simple server that accepts connections from multiple clients. Take a message and refet to all clients (including sender). This will let you focus on socket programming aspects of a server
-	- [ ] write standalone IRC srrver, decompose problem to test each part, find common taskss among different commands and group them into procedure to avoid writing the same code twice : start by implementing the routines that read and parse commands, then implement commands one by one testing each
+	- [X] write standalone IRC srrver, decompose problem to test each part, find common tasks among different commands and group them into procedure to avoid writing the same code twice : start by implementing the routines that read and parse commands, then implement commands one by one testing each
 	- [ ] Be liberal in what you accept and conervative in what you send (RFC 1122: http://www.ietf.org/rfc/rfc1122.txt, page 11)
 	- [ ] Your code should be modular, extensible, readable
 	- [ ] [Unix socket FAQ C++](http://developerweb.net/viewforum.php?id=59)

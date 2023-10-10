@@ -1,75 +1,118 @@
 #ifndef SERVER_HPP
 # define SERVER_HPP
 
-# define	PORT_MIN 1024
-# define	PORT_MAX 65535
-# define    ERRNOMSG "Error: "
-# define    ERROR -1
-# define	MAX_CLIENTS 10		// backlog
-
-//num replies
-# define TOSTR(a) static_cast<std::string>(a)
-# define CRLF "\r\n"
-
-# define MSG(nick, user, cmd, msg)				":" + nick + "!" + user + "@localhost " + cmd + " :" + msg + "\r\n"
-# define RPL332_TOPIC(nick, chanName, topic) 	":localhost 332 " + nick + " " + chanName + " :" + topic + "\r\n"
-# define RPL353_NAMREPLY(nick, chanName, users)	":localhost 353 " + nick + " = " + chanName + " :" +  users + "\r\n"
-# define RPL366_ENDOFNAMES(nick, chanName)		":localhost 366 " + nick + " " + chanName + " :End of /NAMES list\r\n"
-# define ERR401_NOSUCHNICK(nick)				":localhost 401 " + nick + " :No such nick/channel\r\n"
-# define ERR403_NOSUCHCHANNEL(chan)				":localhost 403 " + chan + " :No such channel\r\n"
-# define ERR411_NORECIPIENT(cmd)				":localhost 411 :No recipient given " cmd "\r\n"
-# define ERR412_NOTEXTTOSEND					":localhost 412 :No text to send\r\n"
-# define ERR431_NONICKNAMEGIVEN					":localhost 431 :No nickname given\r\n"
-# define ERR432_ERRONEUSNICKNAME(nick)			":localhost 432 " + nick + " :Erroneous nickname\r\n"
-# define ERR433_NICKNAMEINUSE(nick)				":localhost 433 " + nick + " :Nickname is already in use\r\n"
-# define ERR442_NOTONCHANNEL(chan)				":localhost 442 " + chan + " :You're not on that channel\r\n"
-# define ERR461_NEEDMOREPARAMS(cmd)				":localhost 461 " cmd  ":Not enough parameters\r\n"
-# define ERR462_ALREADYREGISTERED				":localhost 462 :Unauthorized command (already registered)\r\n"
-# define ERR473_INVITEONLYCHAN(chan)			":localhost 473 " + chan + " :Cannot join channel (+i)\r\n"
-# define ERR474_BANNEDFROMCHAN(chan)			":localhost 474 " + chan + " :Cannot join channel (+b)\r\n"
-# define ERR475_BADCHANNELKEY(chan)				":localhost 475 " + chan + " :Cannot join channel (+k)\r\n"
-
-#include "Client.hpp"
-#include "Channel.hpp"
-#include <iostream>
-#include <string>
-#include <stdexcept>
+# include <iostream>
+# include <sys/socket.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <unistd.h>
+# include <cerrno>
+# include <stdexcept>
+# include <vector>
+# include <map>
+# include <fcntl.h>
+# include <sys/poll.h>
+# include <string>
+# include <cstring>
+# include <sstream>
+# include <algorithm>
+# include <poll.h>
+# include <cstdlib>
 #include <sstream>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <vector>
-#include <map>
-#include <fcntl.h>
-#include <netdb.h>
-#include <poll.h>
-#include <string>
-#include <cstring>
-#include <signal.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
-class Client;
-class Channel;
+# include "Client.hpp"
+# include "Channel.hpp"
+
+# define PORT_MIN 1024
+# define PORT_MAX 65535
+# define ERRNOMSG "Error: "
+# define ERROR -1
+# define MAX_CLIENTS 32		// backlog
+# define CRLF "\r\n"
+# define TOSTR(a) static_cast<std::string>(a)
+# define RESET   "\033[0m"
+# define BLACK   "\033[30m"      /* Black */
+# define RED     "\033[31m"      /* Red */
+# define GREEN   "\033[32m"      /* Green */
+# define YELLOW  "\033[33m"      /* Yellow */
+# define BLUE    "\033[34m"      /* Blue */
+# define MAGENTA "\033[35m"      /* Magenta */
+# define CYAN    "\033[36m"      /* Cyan */
+# define WHITE   "\033[37m"      /* White */
+# define LIGHTGREEN "\033[1;32m" /* Light Green */
+
 class Server
 {
-    public:
-		// server.cpp
-        Server();
-        Server(const Server& src);
-        Server& operator=(const Server &rhs);
-        ~Server();
+	public:
+				// server.cpp
+		Server();
+		Server(const Server &src);
+		Server	&operator=(const Server &rhs);
+		~Server();
 
-        Client*     client;
-        Channel*    channel;
+		Client		*clients;
+		Channel		*channels;
 
-        class ExceptionServer : public std::exception
-        {
+		std::string	token;
+		std::string	cmd;
+		bool		setNick;
+		bool		validPass;
+
+		bool		setupServerSocket();
+		bool		serverConnect();
+		//void        Sockets(); // maybe won't need that
+		Client*		addClient(int fd);
+		Channel* 	addChan(std::string name);
+		void		chanErase(Channel *chan);
+		bool		chanExist(std::string channel);
+		bool		nickExist(std::string nick);
+		void		processRecvData(std::string buf, Client *client, Channel *channel);
+		void		isCAP(Client *client);
+
+		int			getPort();
+		int			getSocket();
+		void		setPort(int port);
+		std::string	getPassword();
+		void		setPass(std::string pass);
+		Channel*	getChan(std::string msg);
+
+		void						parseCmd(std::string buf);
+		std::string					parseChannel(std::string buf, size_t pos);
+		void						msgSend(std::string msg, int fd);
+		void						sendToUsersInChan(std::string msg, int fd);
+		void						welcomeMsg(Client *client);
+		void						printIRCBanner();
+		void 						errorMsg(int errCode, int fd, std::string str1, std::string str2, std::string str3, std::string info);
+	
+		//nick
+		void						handleNickSize(Client *client, const std::string &newNick);
+		void						handleNicknameChange(Client *client, const std::string &newNick);
+		bool						isNicknameInUse(const std::string &nickname);
+		bool						isNickValid(const std::string &nickname);
+		void						setNewNick(Client *client, const std::string &newNick);
+
+		//join
+		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
+		std::vector<std::string>			splitChannels(const std::string &channelList);
+		Channel* 							findOrCreateChannel(const std::string &channelName);
+		bool								canJoinChannel(Client *client, Channel *channel, const std::string &pass);
+		void								parseJoinCommand(const std::string &command, std::vector<std::string> &channels, std::string &pass);
+		
+		//part
+		void						cleanupClients(Client *client, Channel *channel);
+		
+		//cmd
+		void						callCmd(std::string cmd, Client *client, Channel *channel);
+		
+		//kick
+		bool						parseKickCommand(const std::string &kickCommand, std::string &chan, std::string &nick, std::string &reason);
+
+		class ExceptionServer : public std::exception
+		{
 			public:
 				ExceptionServer(const char* msg) : _msg(msg) {}
 				const char* what() const throw()
-                {
+				{
 					return _msg;
 				}
 
@@ -77,61 +120,34 @@ class Server
 				const char* _msg;
 		};
 
-        int         getSocket();
-        int         getPort();
-		std::vector<Channel *>	getChan() { return _chan; }
+	private:
+				// server.cpp
+		int						_socket;
+		int						_auth;
+		int						_port;
+		struct sockaddr_in		_addr;
+		std::vector<int>		_sockets;
+		std::vector<pollfd>		_pfds;
+		std::vector<Client*>	_cli;
+		std::vector<Channel*>	_chan;
+		std::string				_password;
+		std::string 			valid_commands[11];
 
-        bool        setNick;
-        void        setPort(int port);
-
-        bool        validPass;
-        bool        serverConnect();
-        bool        setupServerSocket();
-        //void        Sockets(); // maybe won't need that
-        
-        void        initServSocket();
-        void        newClientConnect();
-        void        clientData(pollfd &pfdc);
-        void        processRecvData(int send, char *data, int size);
-        void        clientDisc(int pfdc);
-        void        clientsErase(Client *client);
-        void        chanErase(Channel *chan);
-
-        std::string token;
-        std::string cmd;
-        std::string getPass();
-        void        setPass(std::string pass);
-
-        Client*     addClient(int fd);
-		Channel* 	addChan(std::string name, Client* op);
-
-		// cmd.cpp
-		void								callCmd(Client &client, const std::string& cmd, std::vector<std::string> &params);
-		bool								findNickname(const std::string &nick);
-		bool								findUserClient(const std::string &user);
-		std::vector<Channel *>::iterator	findChannel(const std::string &chan);
-		std::vector<Client *>::iterator		findClientChannel(const std::string &nick, Channel &channel);
-		bool								cmdNick(Client &client, const std::string &nick);
-		bool								cmdUser(Client &client, std::string user);
-		void								sendToUsersInChan(Channel &channel, Client &client, std::string msg);
-		void								cmdJoinNames(Client &client, Channel &channel);
-		bool								cmdJoin(Client &client, std::vector<std::string> &params);
-		bool								cmdPart(Client &client, std::vector<std::string> &params);
-		bool								cmdMsg(Client &client, std::vector<std::string> &params);
-
-    private:
-		// server.cpp
-        int                         _socket;
-        int                         _port;
-        std::string                 password;
-        struct sockaddr_in		    _addr;
-        std::vector<pollfd>		    _pfds;
-        std::vector<Client *>	    _cli;
-        std::vector<Channel *>      _chan;
-        std::map<int, std::string>  msgBuffer;
-
-		// cmd.cpp
-
+				// cmd.cpp
+		void					CAP(Client *client, Channel *channel);
+		void					PING(Client *client, Channel *channel);
+		void					NICK(Client *client, Channel *channel);
+		void					USER(Client *client, Channel *channel);
+		void					JOIN(Client *client, Channel *channel);
+		void					PASS(Client *client, Channel *channel);
+		void					QUIT(Client *client, Channel *channel);
+		void					KICK(Client *client, Channel *channel);
+		void					PART(Client *client, Channel *channel);
+		void					INVITE(Client *client, Channel *channel);
+		void					TOPIC(Client *client, Channel *channel);
+		void					PRIVMSG(Client *client, Channel *channel);
+		//void					LIST(Client *client, Channel *channel);
+		
 };
 
 #endif

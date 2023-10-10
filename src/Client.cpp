@@ -1,44 +1,43 @@
 #include "../inc/Client.hpp"
-#include "../inc/Server.hpp"
-#include "../inc/Channel.hpp"
 
-Client::Client():   _fd(0), _connect(false)
+Client::Client(): _fd(0), _connect(false)
 {
-    _username = "";
-    _nick = "";
-    _setNick = false;
-    _isRegister = false;
+	_username = "";
+	_nick = "";
+	_hostname = "";
+	_isRegister = false;
+	_setNick = false;
 }
 
-Client::Client(int fd): _setNick(false), _fd(fd), _connect(false)
+Client::Client(int fd):	_setNick(false), _fd(fd), _connect(false)
 {
 
 }
 
-Client::Client(const Client& src)
+Client::Client(const Client &src)
 {
-    *this = src;
+	*this = src;
 }
 
-Client& Client::operator=(const Client& rhs)
+Client	&Client::operator=(const Client &rhs)
 {
-    _setNick = rhs._setNick;
-    _fd = rhs._fd;
-    _connect = rhs._connect;
-    _nick = rhs._nick;
-    _username = rhs._username;
-    _isRegister = rhs._isRegister;
+	_setNick = rhs._setNick;
+	_fd = rhs._fd;
+	_nick = rhs._nick;
+	_username = rhs._username;
+	_connect = rhs._connect;
+	_hostname = rhs._hostname;
+	_isRegister = rhs._isRegister;
 
-    return *this;
+	return *this;
 }
 
-Client::~Client(void)
+Client::~Client()
 {
     //std::cout << "Destructor Client Called" << std::endl;
 	//return;
 }
 
-// Getters
 int		Client::getFD() const
 {
 	return (_fd);
@@ -49,37 +48,46 @@ std::string	Client::getNickname()
 	return _nick;
 }
 
+void	Client::setNickname(std::string nick)
+{
+	_nick = nick;
+}
+
+void	Client::setUser(std::string user)
+{
+	_username = user;
+}
+
 std::string	Client::getUser()
 {
 	return _username;
 }
 
-// Setters
-void		Client::setNickname(std::string nick)
+std::string Client::getHost()
 {
-	_nick = nick;
+	char hostname[256];
+	if (gethostname(hostname, sizeof(hostname)) == 0)
+	{
+		return std::string(hostname);
+	}
+	return "";
 }
 
-void		Client::setUser(std::string user)
+bool	Client::isRegister()
 {
-	_username = user;
+	return _isRegister;
 }
 
-bool    Client::isRegister()
+void	Client::setIsRegister(bool registered)
 {
-    return _isRegister;
+		_isRegister = registered;
 }
 
-void    Client::setIsRegister(bool registered)
+bool	Client::isConnect()
 {
-    _isRegister = registered;
+	return _connect;
 }
-
-bool    Client::isConnect()
-{
-    return _connect;
-}
-
+/*
 void 	Client::joinChannel(Channel *channel)
 {
 	channel->addUser(this);
@@ -102,4 +110,4 @@ bool	Client::inChannel(const std::string& channel_name)
 		return false;
 	return true;
 }
-
+*/
