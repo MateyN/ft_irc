@@ -342,7 +342,7 @@ void	Server::isCAP(Client *client)
 	if (connect(client->getFD(), (struct sockaddr*)&_addr, sizeof(_addr)) < 0)
 	{
 		// KR: why saying this when first ever client?
-		std::cerr <<  "there is another connection\r\n"  << std::endl;
+		//std::cerr <<  "there is another connection\r\n"  << std::endl;
 		msgSend("PING\r\n", client->getFD());
 		return;
 	}

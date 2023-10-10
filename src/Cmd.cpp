@@ -309,6 +309,11 @@ void Server::PART(Client *client, Channel *channel)
 	{
         // If there are no members left, remove the channel
         chanErase(channel);
+		std::cout << "Active channels after leaving: " << std::endl;
+        for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
+        {
+            std::cout << (*it)->getChanName() << std::endl;
+        }
     }
 }
 

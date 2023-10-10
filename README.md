@@ -53,7 +53,7 @@
 - [X] /nick 123456789 : should 432 on client
 - [X] /nick lol : with lol being alreadz used, should 433 on client
 - [X] /nick new : normal behavior changes nickname only
-%% - [ ] /nick onchop : try on chop, should keep "@"
+%% - [X] /nick onchop : try on chop, should keep "@"
 ## USER <username>
 - [ ] /user : try with no args, should 461
 	- [ ] ERROR : it does nothing, on irssi, when doind "/user lol", we receive "userhost lol"
@@ -62,8 +62,8 @@
 - [ ] /user new : normal behavior set user
 	- [ ] ERROR : it does nothing, we receive "userhost"
 ## JOIN <channel>
-- [ ] /join new : one client, joins unknown channel : must create it
-	- [ ] /part new : when leaving it (add a cout when leaving to display all chans) is channel still up ? Should it be ?
+- [X] /join new : one client, joins unknown channel : must create it
+	- [X] /part new : when leaving it (add a cout when leaving to display all chans) is channel still up ? Should it be ?
 - [ ] [i] /join ichan; [i+1] /join ichan : i must see i+1
 - [X] /join : test with no params
 - [ ] how a chop is recognizable?
