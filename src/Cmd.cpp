@@ -143,7 +143,6 @@ void Server::setNewNick(Client *client, const std::string &newNick)
     msgSend(msg, client->getFD());
 }
 
-
 void	Server::USER(Client *client, Channel *channel)
 {
 	(void)channel;
@@ -386,6 +385,8 @@ void Server::QUIT(Client *client, Channel *channel)
 
 void Server::KICK(Client* client, Channel* channel)
 {
+	std::cout << GREEN << "COMMAND KICK" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
     // Check if the user is an operator in the channel
     if (channel->Op(client) == true)
 	{
@@ -448,8 +449,8 @@ void Server::KICK(Client* client, Channel* channel)
 
 void Server::INVITE(Client* client, Channel* channel)
 {
-    std::cout << "COMMAND INVITE" << std::endl;
-	std::cout << "---------------" << std::endl;
+	std::cout << GREEN << "COMMAND INVITE" << RESET << std::endl;
+	std::cout << GREEN << "---------------" << RESET << std::endl;
 
     std::string invited;
     std::string chanName;
@@ -513,8 +514,8 @@ void Server::INVITE(Client* client, Channel* channel)
 
 void Server::TOPIC(Client* client, Channel* channel)
 {
-    std::cout << "COMMAND TOPIC" << std::endl;
-	std::cout << "---------------" << std::endl;
+	std::cout << GREEN << "COMMAND TOPIC" << RESET << std::endl;
+	std::cout << GREEN << "--------------" << RESET << std::endl;
 
     std::string topicName;
     std::string msg;
@@ -558,8 +559,8 @@ void Server::TOPIC(Client* client, Channel* channel)
 
 void	Server::PRIVMSG(Client* client, Channel* channel) 
 {
-	std::cout << "COMMAND PRIVMSG" << std::endl;
-	std::cout << "---------------" << std::endl;
+	std::cout << GREEN << "COMMAND PRIVMSG" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
 
     bool 		messageSend = false;
     size_t 		msgStart = cmd.find(':');
@@ -625,7 +626,7 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
         }
     } 
 	else if (cmd.find('#') == std::string::npos) 
-	{
+	{ //hanle priv messages as well as the queries for individual users
         std::size_t startPos = cmd.find(":");
         if (startPos != std::string::npos) 
 		{
@@ -638,6 +639,7 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
 				{
                     if (nickname == (*it)->getNickname()) 
 					{
+						//sending the prriv msg to the user
                         std::string privmsg = ":" + client->getNickname() + " " + token + " " + (*it)->getNickname() + " :" + priv;
                         msgSend(privmsg, (*it)->getFD());
                         return;
@@ -648,7 +650,7 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
             }
         }
     }
-    errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
+    //errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
 }
 
 // TODO

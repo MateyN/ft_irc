@@ -81,7 +81,7 @@ bool	Server::setupServerSocket()
 
 	bzero(&_addr, sizeof(_addr));
 	_addr.sin_family = AF_UNSPEC;
-	_addr.sin_addr.s_addr = INADDR_ANY; // setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
+	_addr.sin_addr.s_addr = htonl(INADDR_ANY); // setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
 	_addr.sin_port = htons(_port); // setting the server's port number & converts it to network byte order.
 
 	clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
@@ -142,8 +142,9 @@ bool	Server::serverConnect()
 						_pfds.push_back(pfdc);
 						clients = addClient(cliSocket); // create and init a new client obj
 								// KR : put client to _cli vector ?
-						std::cout << CYAN << "New client connected" << RESET << std::endl;
+						std::cout << CYAN << "New client connected\r\n" << RESET << std::endl;
 						isCAP(clients);
+						clientReadBuffers[cliSocket] = ""; // read buff for the client
 					}
 					else
 						std::cout << ERRNOMSG << strerror(errno) << std::endl;
@@ -165,7 +166,7 @@ bool	Server::serverConnect()
 					msg[send] += TOSTR(buf);
 					std::string	completeMsg = msg[send].substr(0, msg[send].find(CRLF));
 					channels = getChan(completeMsg);
-					if (TOSTR(buf).find("\n") != std::string::npos)
+					if (TOSTR(buf).find(CRLF) != std::string::npos)
 					{
 						processRecvData(msg[send], clients, channels);
 						msg[send].clear();
@@ -204,9 +205,20 @@ bool	Server::serverConnect()
 						_pfds.erase(_pfds.begin() + i);
 						i--;
 					}
-					else
+					if (storedBytes > 0)
 					{
-						continue;
+						buf[storedBytes] = '\0';
+						std::string receivedData = TOSTR(buf);
+						clientReadBuffers[_pfds[i].fd] += receivedData; // append received data to the client's read buffer
+						// process the messages as long as there are complete
+						std::size_t crlfPos;
+						while ((crlfPos = clientReadBuffers[_pfds[i].fd].find(CRLF)) != std::string::npos)
+                        {
+                            std::string completeMsg = clientReadBuffers[_pfds[i].fd].substr(0, crlfPos);
+                            channels = getChan(completeMsg);
+                            processRecvData(completeMsg, clients, channels);
+                            clientReadBuffers[_pfds[i].fd].erase(0, crlfPos + 2);
+                        }
 					}
 				}
 			}
@@ -241,7 +253,7 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::cout << YELLOW << "Received -> " << RESET << line << std::endl;
+		std::cout << YELLOW << "Received -> \r\n" << RESET << line << std::endl;
 		if (!line.empty())
 		{
 			parseCmd(line);
@@ -331,8 +343,8 @@ void	Server::isCAP(Client *client)
 {
 	if (connect(client->getFD(), (struct sockaddr*)&_addr, sizeof(_addr)) < 0)
 	{
-		std::cerr <<  "there is another connection"  << std::endl;
-		msgSend("PING", client->getFD());
+		std::cerr <<  "there is another connection\r\n"  << std::endl;
+		msgSend("PING\r\n", client->getFD());
 		return;
 	}
 }
