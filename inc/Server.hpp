@@ -58,6 +58,7 @@ class Server
 		std::string	cmd;
 		bool		setNick;
 		bool		validPass;
+		std::map<int, std::string> clientReadBuffers;
 
 		bool		setupServerSocket();
 		bool		serverConnect();
