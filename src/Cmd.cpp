@@ -5,7 +5,8 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[12] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", "PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG" /*, "NOTICE"*/ };
+	std::string valid_commands[12] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", \
+		"PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG" /*, "NOTICE"*/ };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -79,10 +80,10 @@ void Server::NICK(Client *client, Channel *channel)
 
 void Server::handleNickSize(Client *client, const std::string &newNick)
 {
-    if (newNick.size() > 25)
+    if (newNick.size() > 8)
 	{
         errorMsg(ERR432_ERRONEUSNICKNAME, client->getFD(), newNick, "", "", "");
-        std::cerr << "Error: Nickname is longer than 25 characters." << std::endl;
+        std::cerr << "Error: Nickname is longer than 8 characters." << std::endl;
         return;
     }
 
@@ -856,12 +857,6 @@ bool	Server::cmdNick(Client &client, const std::string &nick)
 		client.setNickname(nick);
 	send(fdc, msg.c_str(), msg.length(), 0);
 	return (true);
-// output :
-// 1. try with no arg : should 431 on client
-// 2. try with more than 8 char : should 432 on client
-// 3. try with an existing client nickname : should 433 on client
-// 4. normal behavior changes nickname only
-// 5. try on chop, should keep "@"
 }
 
 bool	Server::cmdUser(Client &client, std::string user)
@@ -890,10 +885,6 @@ bool	Server::cmdUser(Client &client, std::string user)
 	msg = MSG(client.getNickname(), client.getUser(), "USER", user);
 	send(fdc, msg.c_str(), msg.length(), 0);
 	return (true);
-// output
-// 1. try with no args, should 461
-// 2. try with already used user, should 462
-// 3. normal behavior set user
 }
 
 void	Server::cmdJoinNames(Client &client, Channel &channel)
@@ -998,15 +989,6 @@ bool	Server::cmdJoin(Client &client, std::vector<std::string> &params)
 		}
 	}
 	return (false);
-// output:
-// 1. test no params
-// 2. test channame begining by other than #
-// 3. chan do not exist
-// 4. chan exist
-// 5. if fd not invited
-// 6. if fd banned
-// 7. if fd bad pass to chan
-// 8. normal behavior with all names
 }
 
 bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
@@ -1046,12 +1028,6 @@ bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
 	msg = ERR401_NOSUCHNICK(client.getNickname());
 	send(fdc, msg.c_str(), msg.length(), 0);
 	return (false);
-//output:
-//1. no param gives 411
-//2. one param gives 412
-//3. if target is channel, see that it is received by ALL chan clients and not others
-//4. if target is user, see that received only by her
-//5. if target is wrong, send 401
 }
 
 // KR : when to use CAP ?

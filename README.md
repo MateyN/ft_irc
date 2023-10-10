@@ -43,10 +43,73 @@
 	- [X] create a server
 	- [X] make the access to the server password-protected
 	- [X] receive clients
-- [ ] client :
+- [o] client :
 	- [X] choose which client to use ([irssi](https://irssi.org/) ?)
-	- [X] connect to port password :
+	- [ ] connect to port password :
 		- [ ] *register* its connection (NICK, USER)
+
+# TESTS (<c-space> to tick on vimwiki)
+## NICK <nickname>
+- [X] /nick 123456789 : should 432 on client
+- [X] /nick lol : with lol being alreadz used, should 433 on client
+- [X] /nick new : normal behavior changes nickname only
+%% - [ ] /nick onchop : try on chop, should keep "@"
+## USER <username>
+- [ ] /user : try with no args, should 461
+	- [ ] ERROR : it does nothing, on irssi, when doind "/user lol", we receive "userhost lol"
+- [ ] /user lol : try with already used user, should 462
+	- [ ] ERROR : it does nothing, we receive "userhost"
+- [ ] /user new : normal behavior set user
+	- [ ] ERROR : it does nothing, we receive "userhost"
+## JOIN <channel>
+- [ ] /join new : one client, joins unknown channel : must create it
+	- [ ] /part new : when leaving it (add a cout when leaving to display all chans) is channel still up ? Should it be ?
+- [ ] [i] /join ichan; [i+1] /join ichan : i must see i+1
+- [X] /join : test with no params
+- [ ] how a chop is recognizable?
+- [ ] ERROR : when "/join chan", was not able to join
+### MODE k (chop)
+- [ ] [i] /join new; /mode new +k pass; [i+1] /join new : if fd bad pass to chan, does not work 
+	- [ ] [i+1] /join new pass : and can enter
+	- [ ] [i] /mode <chan> -k : and i+1 can join theirself now
+### MODE o (chop)
+- [ ] [i] /mode <chan> +o <i+1> : and i+1 becomes chop
+	- [ ] [i] /mode <chan> +o <i+1> : tries other chop mode, and does not work
+	- [ ] [i+1] /mode <chan> +o <i> : i+1 can give back to i
+- [ ] [i, notchop] /mode <chan> +o <i> : and i does not become chop
+### MODE l (chop)
+- [ ] [i] /mode chan +l 1
+	- [ ] [i+1] /join chan : test above limit, does not work
+	- [ ] [i] /mode chan +l 0; [i+1] /join chan : does not work (set a smaller limit but cannot go higher)
+	- [ ] [i] /mode chan +l 2; [i+1] /join chan : works (set a bigger limit but cannot go higher)
+	- [ ] [i+2] /join chan : does not work
+## PRIVMSG <receiver> <text to be sent>
+- [ ] /privmsg : one param gives 412
+- [ ] [i] /join new; [i+1] /join new; [i] /privmsg new; [i+1] receivesthemessage : if target is channel, see that it is received by ALL chan clients and not others
+- [ ] [i] /privmsg i1 hello; [i1] receivesmessagehello; [i2] nothing; if target is user, see that received only by her
+- [ ] [i] /privmsg iNO hello; if target is wrong, send 401
+- [ ] [i] /privmsg i hello; one client, sends to him self, should it be possible ?
+- [ ] ERROR : when in chan, "Send" shows a 404, it should not
+## KICK <username> (chop)
+- [ ] [i] /kick; no param gives 461
+- [ ] [i] /kick i; does not work !
+- [ ] [i] /kick i1notloggedinchan; kick i+1 when not currently logged in channel, should work
+- [ ] [i] /kick i1notjoinedchan; kick i+1 when not joined in channel, should not work
+## INVITE <nickname> <channel> (chop)
+- [ ] /invite | /invite i1 : no param gives 461
+- [ ] /invite i1 chan; invite i+1 when not joined in channel, should work
+### MODE i (chop)
+- [ ] [i] /join new; /mode new +i; [i+1] /join new : if fd not invited, should not work
+	- [ ] [i] /invite i1 new : and now i+1 can join
+	- [ ] [i] /mode new -i : to chan and i+1 can join theirself now
+## TOPIC <channel> [<topic>] (chop)
+- [ ] /topic : no param gives 461
+- [ ] /join chan; /topic chan : with chan only shows current topic
+- [ ] /topic channeverbeen : not registered to channel shows 442
+- [ ] /topic chan newtopic; /topic chan : with chan and topic changes topic
+### MODE t (chop)
+- [ ] /join chan; /mode chan -t; [i1] /topic chan icanchangetopic : i+1 can change topic
+	- [ ] [i] /mode chan -t; [i1] /topic chan icanNOTchangetopic : i+1 cannot change topic
 
 # Doc
 
