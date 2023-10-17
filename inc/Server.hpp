@@ -109,6 +109,9 @@ class Server
 		//kick
 		bool						parseKickCommand(const std::string &kickCommand, std::string &chan, std::string &nick, std::string &reason);
 
+		//mode
+		std::vector<std::string> 	parseModeArguments(const std::string &command, size_t pos);
+
 		class ExceptionServer : public std::exception
 		{
 			public:
@@ -133,7 +136,7 @@ class Server
 		std::vector<Client*>	_cli;
 		std::vector<Channel*>	_chan;
 		std::string				_password;
-		std::string 			valid_commands[12];
+		std::string 			valid_commands[13];
 
 				// cmd.cpp
 		void					CAP(Client *client, Channel *channel);
@@ -148,7 +151,7 @@ class Server
 		void					INVITE(Client *client, Channel *channel);
 		void					TOPIC(Client *client, Channel *channel);
 		void					PRIVMSG(Client *client, Channel *channel);
-		//void					NOTICE(Client *client, Channel *channel);
+		void					MODE(Client *client, Channel *channel);
 		//void					LIST(Client *client, Channel *channel);
 		
 };
