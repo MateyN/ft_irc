@@ -22,6 +22,9 @@ $(OBJ_DIR)%.opp :	$(SRC_DIR)%.cpp
 					@mkdir -p $(OBJ_DIR)
 					$(CPP) -c $(CPPFLAGS) $(STD98) -I inc/ $< -o $@
 
+tags:
+					ctags --recurse=yes --exclude=.git --exclude=BUILD --exclude=.svn
+
 $(NAME):			$(OBJS)	
 					$(CPP) $(CPPFLAGS) $(STD98) $(OBJS) -o $(NAME)
 
@@ -34,4 +37,4 @@ fclean:				clean
 
 re:					fclean all
 
-.PHONY:				all clean fclean re
+.PHONY:				all clean fclean re tags

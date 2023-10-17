@@ -608,13 +608,16 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
     }
 	
     recipient = '#' + recipient;
+
 	std::size_t count = countOccurrences(cmd, recipient);
     
 	if (count > 1)
 	{
         std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
+		/* std::cout << "test" << std::endl; */
         sendToUsersInChan(msg, client->getFD());
         messageSend = true;
+		// n'entre pas ici
     }
     // If the channel name is not found but there's a '#' in the command
     if (!messageSend && cmd.find('#') != std::string::npos)

@@ -40,11 +40,7 @@ int main(int ac, char *av[])
 		Server	server;
 		Client	client;
 
-		server.setPort(atoi(av[1]));
-		server.setupServerSocket();
-		server.setPass(av[2]);
-		std::cout << CYAN << "Server created and launched!" << RESET << std::endl;
-		server.printIRCBanner();
+		server.setupServerSocket(av);
 		server.serverConnect();
 		return 0;
 	}

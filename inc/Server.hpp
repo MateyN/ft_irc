@@ -60,7 +60,7 @@ class Server
 		bool		validPass;
 		std::map<int, std::string> clientReadBuffers;
 
-		bool		setupServerSocket();
+		bool		setupServerSocket(char* av[]);
 		bool		serverConnect();
 		//void        Sockets(); // maybe won't need that
 		Client*		addClient(int fd);
@@ -73,10 +73,10 @@ class Server
 
 		int			getPort();
 		int			getSocket();
-		void		setPort(int port);
 		std::string	getPassword();
-		void		setPass(std::string pass);
 		Channel*	getChan(std::string msg);
+		void		setPort(int port);
+		void		setPass(std::string pass);
 
 		void						parseCmd(std::string buf);
 		std::string					parseChannel(std::string buf, size_t pos);
