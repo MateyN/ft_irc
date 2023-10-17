@@ -5,7 +5,6 @@
 
 Server::Server(): validPass(false), _socket(0), _auth(0), _port(0)
 {
-
 }
 
 Server::Server(const Server &src)
@@ -64,11 +63,12 @@ std::string	Server::getPassword()
 	return _password;
 }
 
+// Returns Channel or NULL
 Channel*	Server::getChan(std::string msg)
 {
 	std::string		chanName;
 
-	chanName = parseChannel(msg, 0);
+	chanName = parseChannel(msg, 0); // Returns channel name or NULL
 
 	for(std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
 	{
@@ -145,13 +145,12 @@ bool	Server::setupServerSocket(char* av[])
 
 bool	Server::serverConnect()
 {
-	// init a new pollfd struct to monitor the client's socket
-	pollfd		pfdc;
-	int			cliSocket;
-	int			pollResult;
-	char		buf[250];
-	socklen_t	addrlen;
+	int							cliSocket;
+	int							pollResult;
+	char						buf[250];
+	socklen_t					addrlen;
 	std::map<int, std::string>	msg;
+	pollfd						pfdc;
 
 	channels = NULL;
 	bzero(&pfdc, sizeof(pfdc));
@@ -161,40 +160,43 @@ bool	Server::serverConnect()
 
 	while (true)
 	{
+		// Init a new pollfd struct to monitor the client's socket
 		pollResult = poll(_pfds.data(), _pfds.size(), -1);
-
 		if (pollResult == ERROR)
 			std::cout << ERRNOMSG << strerror(errno) << std::endl;
 
+
 		for (unsigned int i = 0; i < _pfds.size(); i++)
 		{
+			// If there is data to read
 			if (_pfds[i].revents & POLLIN)
 			{
+				// If it's a new connection : check the current socket to accept it
 				if (_pfds[i].fd == _socket)
 				{
 					addrlen = sizeof(_addr);
 					cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
-					if (cliSocket != ERROR)
-								// KR : add MAXCLIENT here ???
+					if (cliSocket == ERROR)
+						std::cout << ERRNOMSG << strerror(errno) << std::endl;
+					else
+					// Create and init a new client obj and add to _cli vector
 					{
 						pfdc.fd = cliSocket;
 						pfdc.events = POLLIN;
 						_pfds.push_back(pfdc);
-						clients = addClient(cliSocket); // create and init a new client obj and add to _cli
-								// KR : put client to _cli vector ?
+						clients = addClient(cliSocket); 
 						std::cout << CYAN << "New client connected" << RESET << std::endl;
 						isCAP(clients);
 						clientReadBuffers[cliSocket] = ""; // read buff for the client
 					}
-					else
-						std::cout << ERRNOMSG << strerror(errno) << std::endl;
 				}
+				// Else there is data to receive and store
 				else
 				{
-					// received
 					bzero(&buf, sizeof(buf));
+					int	storedBytes = recv(_pfds[i].fd, buf, sizeof(buf), 0);
 
-					int	storedBytes = recv(_pfds[i].fd, buf, sizeof(buf), 0); // receive and store data
+					// Set current client to match _pfds[i].fd
 					for (std::vector<Client*>::iterator	it = _cli.begin(); it != _cli.end(); it++)
 					{
 						if ((*it)->getFD() == _pfds[i].fd)
@@ -204,20 +206,27 @@ bool	Server::serverConnect()
 						}
 					}
 					int	send = _pfds[i].fd;
+
+					// Get completeMsg from buffer without \n\r or \n for nc (initiated in recv())
 					msg[send] += TOSTR(buf);
 					std::string completeMsg = msg[send];
-					/* std::cout << "*** TOSTR(buf).find(CRLF) |" << TOSTR(buf).find(CRLF) << "|" << std::endl; */
 					if (completeMsg.find(CRLF) != std::string::npos)
 						completeMsg = msg[send].substr(0, msg[send].find(CRLF));
-					else {
+					else { // subtlety for nc
 						completeMsg = msg[send].substr(0, msg[send].find("\n"));
 					}
+
+					// Find channel name in completeMsg, if existing
 					channels = getChan(completeMsg);
-					if (TOSTR(buf).find("\n") != std::string::npos) // for nc : find \n ok, find CRLF no
+
+					// If there is a \n in the buffer, say "Received" and call commands
+					if (TOSTR(buf).find("\n") != std::string::npos) // to include nc : finding \n is sufficient, however finding CRLF means not caring about nc
 					{
 						processRecvData(msg[send], clients, channels);
 						msg[send].clear();
 					}
+
+					// If no more stored bytes, then disconnect
 					if (storedBytes <= 0)
 					{
 						if (storedBytes == 0)
@@ -250,12 +259,12 @@ bool	Server::serverConnect()
 						_pfds.erase(_pfds.begin() + i);
 						i--;
 					}
-					if (storedBytes > 0)
+					// Process the messages as long as they are complete
+					else 
 					{
 						buf[storedBytes] = '\0';
 						std::string receivedData = TOSTR(buf);
 						clientReadBuffers[_pfds[i].fd] += receivedData; // append received data to the client's read buffer
-						// process the messages as long as there are complete
 						std::size_t crlfPos;
 						while ((crlfPos = clientReadBuffers[_pfds[i].fd].find(CRLF)) != std::string::npos)
                         {
@@ -273,8 +282,8 @@ bool	Server::serverConnect()
 
 void Server::parseCmd(std::string buf)
 {
-    token.clear();
-    cmd.clear();
+    token.clear(); // token is command
+    cmd.clear(); // cmd is args
 
     size_t space = buf.find(' ');
     if (space != std::string::npos)
@@ -288,10 +297,11 @@ void Server::parseCmd(std::string buf)
     }
 }
 
+// Say "Received" and immediately leads to callCmd()
 void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 {
 	size_t pos = buf.find(CRLF);
-	if (pos == std::string::npos)
+	if (pos == std::string::npos) // when using irssi
 		pos = buf.find("\n"); // when using nc
 
 	while (pos != std::string::npos)
@@ -304,7 +314,6 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		if (!line.empty())
 		{
 			parseCmd(line);
-			/* std::cout << "line |" << line << "|" << std::endl; */
 			callCmd(token, client, channel); // CALL COMMANDS
 		}
 		else
@@ -367,8 +376,6 @@ void	Server::isCAP(Client *client)
 {
 	if (connect(client->getFD(), (struct sockaddr*)&_addr, sizeof(_addr)) < 0)
 	{
-		// KR: why saying this when first ever client?
-		//std::cerr <<  "there is another connection\r\n"  << std::endl;
 		msgSend("PING", client->getFD());
 		return;
 	}
