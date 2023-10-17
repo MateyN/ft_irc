@@ -53,7 +53,7 @@
 - [X] /nick 123456789 : should 432 on client
 - [X] /nick lol : with lol being alreadz used, should 433 on client
 - [X] /nick new : normal behavior changes nickname only
-%% - [ ] /nick onchop : try on chop, should keep "@"
+%% - [X] /nick onchop : try on chop, should keep "@"
 ## USER <username>
 - [ ] /user : try with no args, should 461
 	- [ ] ERROR : it does nothing, on irssi, when doind "/user lol", we receive "userhost lol"
