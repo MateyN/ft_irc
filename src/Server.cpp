@@ -164,9 +164,15 @@ bool	Server::serverConnect()
 					}
 					int	send = _pfds[i].fd;
 					msg[send] += TOSTR(buf);
-					std::string	completeMsg = msg[send].substr(0, msg[send].find(CRLF));
+					std::string completeMsg = msg[send];
+					/* std::cout << "*** TOSTR(buf).find(CRLF) |" << TOSTR(buf).find(CRLF) << "|" << std::endl; */
+					if (completeMsg.find(CRLF) != std::string::npos)
+						completeMsg = msg[send].substr(0, msg[send].find(CRLF));
+					else {
+						completeMsg = msg[send].substr(0, msg[send].find("\n"));
+					}
 					channels = getChan(completeMsg);
-					if (TOSTR(buf).find(CRLF) != std::string::npos)
+					if (TOSTR(buf).find("\n") != std::string::npos) // for nc : find \n ok, find CRLF no
 					{
 						processRecvData(msg[send], clients, channels);
 						msg[send].clear();
@@ -244,6 +250,8 @@ void Server::parseCmd(std::string buf)
 void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 {
 	size_t pos = buf.find(CRLF);
+	if (pos == std::string::npos)
+		pos = buf.find("\n"); // when using nc
 
 	while (pos != std::string::npos)
 	{
