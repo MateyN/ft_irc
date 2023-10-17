@@ -5,8 +5,8 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[12] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", \
-		"PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG" /*, "NOTICE"*/ };
+	std::string valid_commands[13] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", \
+		"PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG", "MODE" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
@@ -21,11 +21,11 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::KICK,
 		&Server::INVITE,
 		&Server::TOPIC,
-		&Server::PRIVMSG
-		//&Server::NOTICE
+		&Server::PRIVMSG,
+		&Server::MODE
 		//&Server::LIST // channel debug 
 	};
-	for (int i = 0; i < 12; i++)
+	for (int i = 0; i < 13; i++)
 	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
@@ -148,6 +148,7 @@ void	Server::USER(Client *client, Channel *channel)
 {
 	(void)channel;
 	size_t colonPos;
+	std::string user;
 
 	if (client->isRegister() == false)
 	{
@@ -156,11 +157,19 @@ void	Server::USER(Client *client, Channel *channel)
 	colonPos = cmd.find(':');
 	if (colonPos != std::string::npos)
 	{
-		std::string user = cmd.substr(colonPos + 1);
+		user = cmd.substr(colonPos + 1);
 		std::string	msg = "USER : " + user + CRLF;
 		client->setUser(user);
         welcomeMsg(client);
 		//printIRCBanner();
+	}
+	if (colonPos == std::string::npos)
+    {
+        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "USER", ":Not enough parameters", "");
+    }
+	if (user.empty())
+	{
+		errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "USER", ":Not enough parameters", "");
 	}
 }
 
@@ -563,6 +572,25 @@ void Server::TOPIC(Client* client, Channel* channel)
     msgSend(reply, client->getFD());
 }
 
+//	To avoid sending messages when not in channel. How many times the substr appears in the /msg string
+size_t countOccurrences(const std::string &input, std::string &substr) 
+{
+	if (substr.length() == 0) 
+		return 0;
+	size_t i = 0;
+	std::size_t lastIndex = substr.find_last_not_of(' ');
+	if (lastIndex != std::string::npos) 
+	{
+		substr = substr.substr(0, lastIndex + 1);
+	}
+	for (size_t pos = input.find(substr); pos != std::string::npos;
+		 pos = input.find(substr, pos + 1))
+	{
+		i++;
+	}
+	return i;
+}
+
 void	Server::PRIVMSG(Client* client, Channel* channel) 
 {
 	std::cout << GREEN << "COMMAND PRIVMSG" << RESET << std::endl;
@@ -573,10 +601,17 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
     std::string recipient = cmd.substr(1, msgStart - 1);
     std::string msgContent = cmd.substr(msgStart + 1);
 
+    if (msgContent.empty()) 
+	{
+        errorMsg(ERR412_NOTEXTTOSEND, client->getFD(), "", "", "", "");
+        return;
+    }
+	
     recipient = '#' + recipient;
-	/* std::cout << "cmd = |" << cmd << "|" << std::endl; */
-	/* std::cout << "recipient = |" << recipient << "|" << std::endl; */
-    if (cmd.find(recipient) != std::string::npos)
+
+	std::size_t count = countOccurrences(cmd, recipient);
+    
+	if (count > 1)
 	{
         std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
 		/* std::cout << "test" << std::endl; */
@@ -662,6 +697,102 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
     }
     //errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
 }
+/*
+std::vector<std::string> Server::parseModeArguments(const std::string &cmd, size_t pos) 
+{
+    std::vector<std::string> args;
+    size_t endPos;
+    size_t tmp;
+
+    while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size()) 
+	{
+        endPos = cmd.find(" ", (pos + 1));
+        if (endPos == std::string::npos)
+            endPos = cmd.size();
+        tmp = pos + 1;
+        args.push_back(cmd.substr(tmp, endPos - tmp));
+        pos = endPos;
+    }
+
+    return args;
+}
+*/
+
+void Server::MODE(Client *client, Channel *channel) 
+{
+    std::cout << GREEN << "COMMAND MODE" << RESET << std::endl;
+	std::cout << GREEN << "-------------" << RESET << std::endl;
+
+    std::string msg = "";
+    std::string chanName;
+    std::vector<std::string> args;
+    size_t pos = 0;
+    size_t endPos;
+    bool isModeAdded = false;
+
+    if (cmd == (client->getNickname() + " +l"))
+        return;
+
+    chanName = parseChannel(cmd, 0);
+    bool isChan = chanExist(chanName);
+
+    if (!isChan) 
+	{
+        errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), client->getNickname(), chanName, "", "");
+        return;
+    }
+
+    if (!channel->Op(client))
+	{
+        errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
+        return;
+    }
+
+    pos = chanName.size() + 1;
+    while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size()) 
+	{
+        endPos = cmd.find(" ", (pos + 1));
+        if (endPos == std::string::npos)
+            endPos = cmd.size();
+        std::string arg = cmd.substr((pos + 1), endPos - pos - 1);
+        args.push_back(arg);
+        pos = endPos;
+    }
+
+    if (args.size() == 0) 
+	{
+        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+        return;
+    }
+
+    int limit = std::atoi(args.front().c_str());
+
+    if (limit <= 0) 
+	{
+        errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+        return;
+    }
+
+    isModeAdded = (cmd.find("+") != std::string::npos);
+    channel->setLimit(isModeAdded, limit);
+	std::string modeChange;
+	if (isModeAdded) 
+	{
+		modeChange = "+l";
+	} 
+	else 
+	{
+		modeChange = "-l";
+	}
+   	msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeChange + " " + args.front() + " :Channel limit set to " + args.front();
+
+    if (!msg.empty()) 
+	{
+        msgSend(msg, client->getFD());
+        sendToUsersInChan(msg, client->getFD());
+    }
+}
+
 
 // TODO
 /*

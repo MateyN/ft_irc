@@ -181,8 +181,8 @@ bool	Server::serverConnect()
 						pfdc.events = POLLIN;
 						_pfds.push_back(pfdc);
 						clients = addClient(cliSocket); // create and init a new client obj and add to _cli
-						// should nick and stuff
-						std::cout << CYAN << "New client connected\r\n" << RESET << std::endl;
+								// KR : put client to _cli vector ?
+						std::cout << CYAN << "New client connected" << RESET << std::endl;
 						isCAP(clients);
 						clientReadBuffers[cliSocket] = ""; // read buff for the client
 					}
@@ -300,7 +300,7 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::cout << YELLOW << "Received -> \r\n" << RESET << line << std::endl;
+		std::cout << YELLOW << "Received -> " << RESET << line << std::endl;
 		if (!line.empty())
 		{
 			parseCmd(line);
@@ -369,7 +369,7 @@ void	Server::isCAP(Client *client)
 	{
 		// KR: why saying this when first ever client?
 		//std::cerr <<  "there is another connection\r\n"  << std::endl;
-		msgSend("PING\r\n", client->getFD());
+		msgSend("PING", client->getFD());
 		return;
 	}
 }
