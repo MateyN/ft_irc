@@ -2,3 +2,4 @@ ircserv
 .DS_Store
 obj/*
 .vscode/
+tags

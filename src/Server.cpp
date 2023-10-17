@@ -49,41 +49,78 @@ Server::~Server()
     _chan.clear();
 }
 
+int		Server::getPort()
+{
+	return (_port);
+}
+
+int	Server::getSocket()
+{
+	return (_socket);
+}
+
+std::string	Server::getPassword()
+{
+	return _password;
+}
+
+Channel*	Server::getChan(std::string msg)
+{
+	std::string		chanName;
+
+	chanName = parseChannel(msg, 0);
+
+	for(std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
+	{
+		if ((*it)->getChanName() == chanName)
+			return (*it);
+	}
+	return (NULL);
+}
 
 void	Server::setPort(int port)
 {
 	_port = port;
 }
 
-int		Server::getPort()
+void	Server::setPass(std::string pass) 
 {
-	return (_port);
+	_password = pass;
 }
 
-bool	Server::setupServerSocket()
+bool	Server::setupServerSocket(char* av[])
 {
 	int	clientSocket;
 
+	// Set port
+	this->setPort(atoi(av[1]));
+
+	// Init socket
 	_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (_socket == ERROR)
 		throw (Server::ExceptionServer(ERRNOMSG"SOCK_STREAM"));
 
+	// Set socket options
 	int	opt_len = 1;
 	clientSocket = setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, &opt_len, sizeof(opt_len));
 	if (clientSocket == ERROR)
 		throw (Server::ExceptionServer(ERRNOMSG"socket"));
-	// Set client socket to non-blocking
+
+	// Set client socket to non-blocking, to never wait for an operation to complete (e.g., switch bw many different connected sockets)
 	clientSocket = fcntl(_socket, F_SETFL, O_NONBLOCK);
 	if (_socket == ERROR)
 		throw (Server::ExceptionServer(ERRNOMSG"setsockopt"));
-
 	_sockets.push_back(_socket);
 
+	// Populate sockaddr_in struct
 	bzero(&_addr, sizeof(_addr));
 	_addr.sin_family = AF_UNSPEC;
-	_addr.sin_addr.s_addr = htonl(INADDR_ANY); // setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
-	_addr.sin_port = htons(_port); // setting the server's port number & converts it to network byte order.
+	//// setting the server's IP address to INADDR_ANY, it will bind to all available network interfaces.
+	_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	//// setting the server's port number & converts it to network byte order.
+	_addr.sin_port = htons(_port); 
 
+	// Bind the address to the socket to receive data on this socket
 	clientSocket = bind(_socket, (struct sockaddr *)&_addr, sizeof(_addr));
 	if (clientSocket == ERROR)
 	{
@@ -91,15 +128,19 @@ bool	Server::setupServerSocket()
 		throw (Server::ExceptionServer(ERRNOMSG"fail bind"));
 	}
 
+	// Listen for connections on a socket
 	clientSocket = listen(_socket, MAX_CLIENTS);
 	if (clientSocket == ERROR)
 		throw (Server::ExceptionServer(ERRNOMSG "fail listen"));
-	return (true);
-}
 
-int	Server::getSocket()
-{
-	return (_socket);
+	// Set Password
+	this->setPass(av[2]);
+
+	// Print result
+	std::cout << CYAN << "Server created and launched!" << RESET << std::endl;
+	this->printIRCBanner();
+
+	return (true);
 }
 
 bool	Server::serverConnect()
@@ -139,8 +180,8 @@ bool	Server::serverConnect()
 						pfdc.fd = cliSocket;
 						pfdc.events = POLLIN;
 						_pfds.push_back(pfdc);
-						clients = addClient(cliSocket); // create and init a new client obj
-								// KR : put client to _cli vector ?
+						clients = addClient(cliSocket); // create and init a new client obj and add to _cli
+						// should nick and stuff
 						std::cout << CYAN << "New client connected\r\n" << RESET << std::endl;
 						isCAP(clients);
 						clientReadBuffers[cliSocket] = ""; // read buff for the client
@@ -263,7 +304,8 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		if (!line.empty())
 		{
 			parseCmd(line);
-			callCmd(token, client, channel);
+			/* std::cout << "line |" << line << "|" << std::endl; */
+			callCmd(token, client, channel); // CALL COMMANDS
 		}
 		else
 			errorMsg(461, client->getFD(), "", "", "", "");
@@ -319,30 +361,6 @@ std::string Server::parseChannel(std::string input, size_t start)
 	else
 		chanName = input;
 	return chanName;
-}
-
-Channel*	Server::getChan(std::string msg)
-{
-	std::string		chanName;
-
-	chanName = parseChannel(msg, 0);
-
-	for(std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); it++)
-	{
-		if ((*it)->getChanName() == chanName)
-			return (*it);
-	}
-	return (NULL);
-}
-
-std::string	Server::getPassword()
-{
-	return _password;
-}
-
-void	Server::setPass(std::string pass) 
-{
-	_password = pass;
 }
 
 void	Server::isCAP(Client *client)
