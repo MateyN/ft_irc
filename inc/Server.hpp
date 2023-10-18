@@ -19,6 +19,7 @@
 # include <poll.h>
 # include <cstdlib>
 #include <sstream>
+#include <ctime>
 
 # include "Client.hpp"
 # include "Channel.hpp"

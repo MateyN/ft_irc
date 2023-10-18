@@ -5,18 +5,18 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[13] = {"CAP", "PING", "NICK", "USER", "JOIN", "PART", \
-		"PASS", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG", "MODE" };
+	std::string valid_commands[13] = {"CAP", "PING", "PASS", "NICK", "USER", "JOIN", \
+		"PART", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG", "MODE" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
 	{
 		&Server::CAP,
 		&Server::PING,
+		&Server::PASS,
 		&Server::NICK,
 		&Server::USER,
 		&Server::JOIN,
 		&Server::PART,
-		&Server::PASS,
 		&Server::QUIT,
 		&Server::KICK,
 		&Server::INVITE,
@@ -29,6 +29,13 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 	{
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
+			// PASS needs to be set before calling other commands, CAP, PING, PASS can be done without isRegistered()
+			if (!client->isRegister() && i >= 3) 
+			{
+				std::cout << "PASS" << std::endl;
+				errorMsg(ERR464_PASSWDMISMATCH, client->getFD(),"", "", "", "");
+				return ;
+			}
 			(this->*funcPtr[i])(client, channel);
 			return;
 		}
@@ -63,10 +70,7 @@ void Server::NICK(Client *client, Channel *channel)
 
     (void)channel;
 
-    if (client->isRegister() == false)
-	{
-        return;
-    }
+
     std::string newNick = cmd;
     if (client->_setNick)
 	{
@@ -150,10 +154,6 @@ void	Server::USER(Client *client, Channel *channel)
 	size_t colonPos;
 	std::string user;
 
-	if (client->isRegister() == false)
-	{
-		return;
-	}
 	colonPos = cmd.find(':');
 	if (colonPos != std::string::npos)
 	{
@@ -161,16 +161,11 @@ void	Server::USER(Client *client, Channel *channel)
 		std::string	msg = "USER : " + user + CRLF;
 		client->setUser(user);
         welcomeMsg(client);
-		//printIRCBanner();
 	}
 	if (colonPos == std::string::npos)
-    {
         errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "USER", ":Not enough parameters", "");
-    }
 	if (user.empty())
-	{
 		errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), client->getNickname(), "USER", ":Not enough parameters", "");
-	}
 }
 
 void Server::JOIN(Client *client, Channel *channel)

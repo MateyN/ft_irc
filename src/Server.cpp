@@ -188,6 +188,7 @@ bool	Server::serverConnect()
 						std::cout << CYAN << "New client connected" << RESET << std::endl;
 						isCAP(clients);
 						clientReadBuffers[cliSocket] = ""; // read buff for the client
+						msgSend("Please set \"PASS <password>\", \"NICK <nickname>\", \"USER <username> <i_mode> * :<realname>\"", clients->getFD());
 					}
 				}
 				// Else there is data to receive and store
@@ -259,8 +260,8 @@ bool	Server::serverConnect()
 						_pfds.erase(_pfds.begin() + i);
 						i--;
 					}
-					// Process the messages as long as they are complete
 					else 
+					// Process the messages as long as they are complete
 					{
 						buf[storedBytes] = '\0';
 						std::string receivedData = TOSTR(buf);
@@ -310,7 +311,10 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::cout << YELLOW << "Received -> " << RESET << line << std::endl;
+		std::time_t result = std::time(nullptr);
+		std::string timeres = std::asctime(std::localtime(&result));
+
+		std::cout << YELLOW << timeres << "Received -> " << RESET << line << std::endl;
 		if (!line.empty())
 		{
 			parseCmd(line);
