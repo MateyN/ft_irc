@@ -70,7 +70,6 @@ void Server::NICK(Client *client, Channel *channel)
 
     (void)channel;
 
-
     std::string newNick = cmd;
     if (client->_setNick)
 	{
@@ -783,4 +782,82 @@ void Server::MODE(Client *client, Channel *channel)
         msgSend(msg, client->getFD());
         sendToUsersInChan(msg, client->getFD());
     }
+    if (cmd.find("+o") != std::string::npos) 
+	{
+        if (args.size() < 2) 
+		{
+            errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+            return;
+        }
+		std::string modeFlag;
+		if (isModeAdded) 
+		{
+			modeFlag = "+o";
+		} 
+		else 
+		{
+			modeFlag = "-o";
+		}
+
+		std::string nickname = args[1];
+		Client* targetClient = NULL;
+		std::vector<Client*>::iterator it;
+		for (it = _cli.begin(); it != _cli.end(); ++it) 
+		{
+			if ((*it)->getNickname() == nickname) 
+			{
+				targetClient = *it;
+				break;
+			}
+		}
+		if (!targetClient) 
+		{
+			errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), nickname, "", "");
+			return;
+		}
+
+		if (isModeAdded) 
+		{
+			if (channel->Op(targetClient)) 
+			{
+				errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), targetClient->getNickname(), chanName, "");
+				return;
+			}
+			channel->addOp(targetClient);
+		} 
+		else 
+		{
+			if (!channel->Op(targetClient)) 
+			{
+				errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), targetClient->getNickname(), chanName, "");
+				return;
+			}
+			channel->eraseOp(targetClient);
+		}
+		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeFlag + " " + nickname;
+		if (!msg.empty()) 
+		{
+			msgSend(msg, client->getFD());
+			sendToUsersInChan(msg, client->getFD());
+		}
+		if (cmd.find("+i") != std::string::npos) 
+		{
+			std::string modeFlag;
+			if (isModeAdded) 
+			{
+				modeFlag = "+i";
+			} 
+			else 
+			{
+				modeFlag = "-i";
+			}
+			channel->setInviteMode(isModeAdded);
+			msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeFlag;
+			if (!msg.empty()) 
+			{
+				msgSend(msg, client->getFD());
+				sendToUsersInChan(msg, client->getFD());
+			}
+		}
+	}
 }
