@@ -12,7 +12,7 @@ OBJ_DIR			= 	obj/
 OBJS			=	$(addprefix $(OBJ_DIR), $(SRCS:.cpp=.opp))
 
 CPP				=	c++
-CPPFLAGS		=	-Wall -Wextra -Werror #-g -fsanitize=address
+CPPFLAGS		=	-Wall -Wextra -Werror -g -fsanitize=address
 STD98			=	-std=c++98
 RM				=	rm -rf
 
