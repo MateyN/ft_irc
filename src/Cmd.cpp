@@ -572,7 +572,7 @@ size_t countOccurrences(const std::string &input, std::string &substr)
 	return i;
 }
 
-void	Server::PRIVMSG(Client* client, Channel* channel) 
+void	Server::PRIVMSG(Client *client, Channel *channel) 
 {
 	std::cout << GREEN << "COMMAND PRIVMSG" << RESET << std::endl;
 	std::cout << GREEN << "-------------" << RESET << std::endl;
@@ -704,7 +704,7 @@ void Server::MODE(Client *client, Channel *channel)
     std::cout << GREEN << "COMMAND MODE" << RESET << std::endl;
 	std::cout << GREEN << "-------------" << RESET << std::endl;
 
-    std::string msg = "";
+    std::string msg;
     std::string chanName;
     std::vector<std::string> args;
     size_t pos = 0;
@@ -762,9 +762,9 @@ void Server::MODE(Client *client, Channel *channel)
 		{
 			channel->setTopicMode(isModeAdded);
 			if (isModeAdded)
-				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +t " + " :Only channel operators may set the channel topic";
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Only channel operators may set the channel topic";
 			else
-				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -t " + " :Channel topic can be set by everyone";	
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel topic can be set by everyone";	
 		}
 		else if (cmd.find("o") != std::string::npos)
 		{
@@ -777,9 +777,9 @@ void Server::MODE(Client *client, Channel *channel)
 			if (channel->setOp(isModeAdded, args.back()))
 			{
 				if (isModeAdded)
-					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +o " + " " + args.back() + " :has been set as an operator.";			
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + args.back() + " :has been set as an operator.";			
 				else
-					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -o " + " " + args.back() + " :has been removed from operators";		
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + args.back() + " :has been removed from operators";		
 			}
 		}
 		else if (cmd.find("l") != std::string::npos)
@@ -835,18 +835,18 @@ void Server::MODE(Client *client, Channel *channel)
 
 			channel->setPassMode(isModeAdded);
 			if (isModeAdded)
-				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +k " + " :a password key has been set";			
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :a password key has been set";			
 			else
-				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -k " + " :the password key has been removed";
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :the password key has been removed";
 		}
 		else if (cmd.find("i") != std::string::npos)
 		{
 			channel->setInviteMode(isModeAdded);
 
 			if (isModeAdded)
-				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +i " + " :invite only activated";			
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :invite only activated";			
 			else
-				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -i " + " :invite only deactivated";
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :invite only deactivated";
 		}
 		else
 		{
