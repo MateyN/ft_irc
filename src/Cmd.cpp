@@ -542,25 +542,15 @@ void Server::TOPIC(Client* client, Channel* channel)
 	else
 	{
     	pos = cmd.find(":");
-        if (pos != std::string::npos && pos + 1 != cmd.size())
+        if (pos != std::string::npos && (std::string::npos + 1) != cmd.size())
             topicName = cmd.substr(pos + 1);
         else
             topicName = cmd;
-		std::string oldTopic = channel->getTopic();
 		channel->setTopic(topicName, client);
-		if (topicName.empty())
-		{
-            msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName() + " :" + topicName;
-        }
-        else
-        {
-            msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName() + " :" + topicName + " (was: " + oldTopic + ")";
-        }
-    }
+		msg = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
+	}
 	msgSend(msg, client->getFD());
     sendToUsersInChan(msg, client->getFD());
-    std::string reply = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
-    msgSend(reply, client->getFD());
 }
 
 //	To avoid sending messages when not in channel. How many times the substr appears in the /msg string
@@ -721,13 +711,13 @@ void Server::MODE(Client *client, Channel *channel)
     size_t endPos;
     bool isModeAdded = false;
 
-    if (cmd == (client->getNickname() + " +l"))
+    if (cmd == (client->getNickname() + " +i"))
         return;
 
-    chanName = parseChannel(cmd, 0);
-    bool isChan = chanExist(chanName);
+	chanName = parseChannel(cmd, 0);
+	bool isChan = chanExist(chanName);
 
-    if (!isChan) 
+	if (!isChan)
 	{
         errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), client->getNickname(), chanName, "", "");
         return;
@@ -740,12 +730,18 @@ void Server::MODE(Client *client, Channel *channel)
     }
 
     pos = chanName.size() + 1;
-    while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size()) 
+	if (cmd.empty())
+	{
+		errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+		return ;
+	}
+
+	while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size())
 	{
         endPos = cmd.find(" ", (pos + 1));
         if (endPos == std::string::npos)
             endPos = cmd.size();
-        std::string arg = cmd.substr((pos + 1), endPos - pos - 1);
+        std::string arg = cmd.substr((pos + 1), ((endPos - pos) - 1));
         args.push_back(arg);
         pos = endPos;
     }
@@ -756,69 +752,111 @@ void Server::MODE(Client *client, Channel *channel)
 		return;
 	}
 
-	if (cmd.find("+l") != std::string::npos) 
-	{
-		if (args.empty()) 
-		{
-			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
-			return;
-		}
+		pos = 0;
+		if (cmd.find("+") != std::string::npos)
+			isModeAdded = true;
+		else
+			isModeAdded = false;
 
-		int limit = std::atoi(args.front().c_str());
-		if (limit <= 0) 
+		if (cmd.find("t") != std::string::npos)
+		{
+			channel->setTopicMode(isModeAdded);
+			if (isModeAdded)
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +t " + " :Only channel operators may set the channel topic";
+			else
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -t " + " :Channel topic can be set by everyone";	
+		}
+		else if (cmd.find("o") != std::string::npos)
+		{
+			if (args.size() == 0)
+			{
+				errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), channel->getChanName(), "Invalid channel limit", "", "");
+				return ;
+			}
+
+			if (channel->setOp(isModeAdded, args.back()))
+			{
+				if (isModeAdded)
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +o " + " " + args.back() + " :has been set as an operator.";			
+				else
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -o " + " " + args.back() + " :has been removed from operators";		
+			}
+		}
+		else if (cmd.find("l") != std::string::npos)
+		{
+			if (args.size() == 0 && (isModeAdded))
+			{
+				errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+				return ;
+			}
+
+			if (isModeAdded)
+			{
+				int limit = std::atoi(args.front().c_str());
+				if (limit <= 0)
+				{
+					errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+					return ;
+				}
+				channel->setLimit(true, limit);
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been set to " + args.front();			
+			}
+			else
+			{
+				channel->setLimit(false, 0);
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been removed";
+			}
+		}
+		else if (cmd.find("k") != std::string::npos)
+		{
+			if (args.size() == 0 && (isModeAdded))
+			{
+				errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+				return ;
+			}
+			
+			if (isModeAdded)
+			{
+				std::string	passw;
+				if (args.size() == 1)
+					passw = args.front();
+				else if (args.size() == 2)
+				{
+					if (channel->isNumber(args.front()))
+						passw = args[1];
+					else
+						passw = args.front();
+				}
+				else
+					passw = args[1];
+
+				channel->setChanPass(passw);
+			}
+
+			channel->setPassMode(isModeAdded);
+			if (isModeAdded)
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +k " + " :a password key has been set";			
+			else
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -k " + " :the password key has been removed";
+		}
+		else if (cmd.find("i") != std::string::npos)
+		{
+			channel->setInviteMode(isModeAdded);
+
+			if (isModeAdded)
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " +i " + " :invite only activated";			
+			else
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + " -i " + " :invite only deactivated";
+		}
+		else
 		{
 			errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
 			return;
 		}
 
-		channel->setLimit(true, limit);
-		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +l" + " :Channel limit has been set to " + args.front();
-	}
-
-	if (cmd.find("-l") != std::string::npos) 
-	{
-		channel->setLimit(false, 0);
-		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been removed";
-	}
-	if (!msg.empty()) 
-	{
-        msgSend(msg, client->getFD());
-        sendToUsersInChan(msg, client->getFD());
-	}
-
-    if (cmd.find("+o") != std::string::npos) 
-	{
-        if (args.size() == 0) 
-		{
-            errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
-            return;
-        }
-		if (channel->setOp(isModeAdded, args.back()))
-			{
-				if (isModeAdded)
-					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +o " + args.back() + " :has been granted operator status.";			
-				else
-					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " -o " + args.back() + " :has been removed from operators";		
-			}
-		}
-
-		if (cmd.find("+i") != std::string::npos) 
-		{
-		std::string modeFlag;
-		if (isModeAdded) 
-		{
-			modeFlag = "+i";
-		} 
-		else 
-		{
-			modeFlag = "-i";
-		}
-		channel->setInviteMode(isModeAdded);
-		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeFlag;
-		if (!msg.empty()) 
+		if (!msg.empty())
 		{
 			msgSend(msg, client->getFD());
 			sendToUsersInChan(msg, client->getFD());
 		}
-	}
 }

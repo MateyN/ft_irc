@@ -182,6 +182,7 @@ bool	Channel::userExist(const std::string& nickname)
 	return false;
 }
 
+/*
 bool Channel::addOp(Client *client)
 {
     if (!_op.empty())
@@ -215,8 +216,8 @@ bool Channel::addOp(Client *client)
     std::cout << "Not a member -> " + client->getNickname() << std::endl;
     return (false);
 }
+*/
 
-/*
 bool Channel::addOp(Client *client)
 {
     bool user = false;
@@ -259,7 +260,7 @@ bool Channel::addOp(Client *client)
         return (false);
     }
 }
-*/
+
 bool	Channel::eraseOp(Client *client)
 {
 	bool		user = false;
