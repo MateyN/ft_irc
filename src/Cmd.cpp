@@ -553,45 +553,33 @@ void Server::TOPIC(Client* client, Channel* channel)
     sendToUsersInChan(msg, client->getFD());
 }
 
-//	To avoid sending messages when not in channel. How many times the substr appears in the /msg string
-size_t countOccurrences(const std::string &input, std::string &substr) 
-{
-	if (substr.length() == 0) 
-		return 0;
-	size_t i = 0;
-	std::size_t lastIndex = substr.find_last_not_of(' ');
-	if (lastIndex != std::string::npos) 
-	{
-		substr = substr.substr(0, lastIndex + 1);
-	}
-	for (size_t pos = input.find(substr); pos != std::string::npos;
-		 pos = input.find(substr, pos + 1))
-	{
-		i++;
-	}
-	return i;
-}
-
 void	Server::PRIVMSG(Client *client, Channel *channel) 
 {
 	std::cout << GREEN << "COMMAND PRIVMSG" << RESET << std::endl;
-	std::cout << GREEN << "-------------" << RESET << std::endl;
+	std::cout << GREEN << "----------------" << RESET << std::endl;
 
     bool 		messageSend = false;
     size_t 		msgStart = cmd.find(':');
     std::string recipient = cmd.substr(1, msgStart - 1);
     std::string msgContent = cmd.substr(msgStart + 1);
 
-    if (msgContent.empty()) 
+    if (msgContent.empty() || recipient.empty()) 
 	{
         errorMsg(ERR412_NOTEXTTOSEND, client->getFD(), "", "", "", "");
         return;
     }
 	
     recipient = '#' + recipient;
+	size_t count = 0;
+    size_t pos = 0;
 
-	std::size_t count = countOccurrences(cmd, recipient);
-    
+	//	To avoid sending messages when not in channel. How many times the substr appears in the /msg string
+	while ((pos = cmd.find(recipient, pos)) != std::string::npos) 
+    {
+        count++;
+        pos += recipient.size();
+    }
+
 	if (count > 1)
 	{
         std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
@@ -676,28 +664,7 @@ void	Server::PRIVMSG(Client *client, Channel *channel)
             }
         }
     }
-    //errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
 }
-/*
-std::vector<std::string> Server::parseModeArguments(const std::string &cmd, size_t pos) 
-{
-    std::vector<std::string> args;
-    size_t endPos;
-    size_t tmp;
-
-    while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size()) 
-	{
-        endPos = cmd.find(" ", (pos + 1));
-        if (endPos == std::string::npos)
-            endPos = cmd.size();
-        tmp = pos + 1;
-        args.push_back(cmd.substr(tmp, endPos - tmp));
-        pos = endPos;
-    }
-
-    return args;
-}
-*/
 
 void Server::MODE(Client *client, Channel *channel) 
 {
