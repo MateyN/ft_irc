@@ -750,114 +750,75 @@ void Server::MODE(Client *client, Channel *channel)
         pos = endPos;
     }
 
-    if (args.size() == 0) 
+	if (args.size() > 3)
 	{
-        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
-        return;
-    }
-
-    int limit = std::atoi(args.front().c_str());
-
-    if (limit <= 0) 
-	{
-        errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
-        return;
-    }
-
-    isModeAdded = (cmd.find("+") != std::string::npos);
-    channel->setLimit(isModeAdded, limit);
-	std::string modeChange;
-	if (isModeAdded) 
-	{
-		modeChange = "+l";
-	} 
-	else 
-	{
-		modeChange = "-l";
+		errorMsg(ERR472_UNKNOWNMODE, client->getFD(), client->getNickname(), "", ":Too many arguments", "");
+		return;
 	}
-   	msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeChange + " " + args.front() + " :Channel limit set to " + args.front();
 
-    if (!msg.empty()) 
+	if (cmd.find("+l") != std::string::npos) 
+	{
+		if (args.empty()) 
+		{
+			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+			return;
+		}
+
+		int limit = std::atoi(args.front().c_str());
+		if (limit <= 0) 
+		{
+			errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+			return;
+		}
+
+		channel->setLimit(true, limit);
+		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +l" + " :Channel limit has been set to " + args.front();
+	}
+
+	if (cmd.find("-l") != std::string::npos) 
+	{
+		channel->setLimit(false, 0);
+		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been removed";
+	}
+	if (!msg.empty()) 
 	{
         msgSend(msg, client->getFD());
         sendToUsersInChan(msg, client->getFD());
-    }
+	}
+
     if (cmd.find("+o") != std::string::npos) 
 	{
-        if (args.size() < 2) 
+        if (args.size() == 0) 
 		{
             errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
             return;
         }
+		if (channel->setOp(isModeAdded, args.back()))
+			{
+				if (isModeAdded)
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +o " + args.back() + " :has been granted operator status.";			
+				else
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " -o " + args.back() + " :has been removed from operators";		
+			}
+		}
+
+		if (cmd.find("+i") != std::string::npos) 
+		{
 		std::string modeFlag;
 		if (isModeAdded) 
 		{
-			modeFlag = "+o";
+			modeFlag = "+i";
 		} 
 		else 
 		{
-			modeFlag = "-o";
+			modeFlag = "-i";
 		}
-
-		std::string nickname = args[1];
-		Client* targetClient = NULL;
-		std::vector<Client*>::iterator it;
-		for (it = _cli.begin(); it != _cli.end(); ++it) 
-		{
-			if ((*it)->getNickname() == nickname) 
-			{
-				targetClient = *it;
-				break;
-			}
-		}
-		if (!targetClient) 
-		{
-			errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), nickname, "", "");
-			return;
-		}
-
-		if (isModeAdded) 
-		{
-			if (channel->Op(targetClient)) 
-			{
-				errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), targetClient->getNickname(), chanName, "");
-				return;
-			}
-			channel->addOp(targetClient);
-		} 
-		else 
-		{
-			if (!channel->Op(targetClient)) 
-			{
-				errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), targetClient->getNickname(), chanName, "");
-				return;
-			}
-			channel->eraseOp(targetClient);
-		}
-		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeFlag + " " + nickname;
+		channel->setInviteMode(isModeAdded);
+		msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeFlag;
 		if (!msg.empty()) 
 		{
 			msgSend(msg, client->getFD());
 			sendToUsersInChan(msg, client->getFD());
-		}
-		if (cmd.find("+i") != std::string::npos) 
-		{
-			std::string modeFlag;
-			if (isModeAdded) 
-			{
-				modeFlag = "+i";
-			} 
-			else 
-			{
-				modeFlag = "-i";
-			}
-			channel->setInviteMode(isModeAdded);
-			msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeFlag;
-			if (!msg.empty()) 
-			{
-				msgSend(msg, client->getFD());
-				sendToUsersInChan(msg, client->getFD());
-			}
 		}
 	}
 }
