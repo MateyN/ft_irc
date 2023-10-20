@@ -741,14 +741,44 @@ void Server::MODE(Client *client, Channel *channel)
 				return ;
 			}
 
-			if (channel->setOp(isModeAdded, args.back()))
+			std::string username = args.back();
+			bool userExists = false;
+			for (std::vector<Client *>::iterator it = _cli.begin(); it != _cli.end(); ++it)
 			{
+				if ((*it)->getNickname() == username)
+				{
+					userExists = true;
+					break;
+				}
+			}
+
+			if (!userExists)
+			{
+				errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), username, "", "");
+				return;
+			}
+
+			bool opAdded = channel->setOp(isModeAdded, username);
+
+			if (opAdded)
+			{
+
 				if (isModeAdded)
-					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + args.back() + " :has been set as an operator.";			
+				{
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +o " + username + " :" + "has been set as an operator";
+				}
 				else
-					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + args.back() + " :has been removed from operators";		
+				{
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " -o " + username + " :" + "has been removed from operators";
+				}
+			}
+			else
+			{
+				errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
+				return;
 			}
 		}
+
 		else if (cmd.find("l") != std::string::npos)
 		{
 			if (args.size() == 0 && (isModeAdded))
