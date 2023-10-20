@@ -649,18 +649,29 @@ void	Server::PRIVMSG(Client *client, Channel *channel)
             if (nick != std::string::npos) 
 			{
                 std::string nickname = cmd.substr(0, nick);
+				if (nickname == client->getNickname()) 
+            	{
+                	// Prevent sending the private message to yourself
+					std::cout << "Cannot send privmsg to yourself" << std::endl;
+                	//errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
+                	return;
+            	}
+				bool recipientExists = false;
                 for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); it++) 
 				{
                     if (nickname == (*it)->getNickname()) 
 					{
-						//sending the prriv msg to the user
-                        std::string privmsg = ":" + client->getNickname() + " " + token + " " + (*it)->getNickname() + " :" + priv;
-                        msgSend(privmsg, (*it)->getFD());
-                        return;
+						std::string privmsg = ":" + client->getNickname() + " " + token + " " + (*it)->getNickname() + " :" + priv;
+						msgSend(privmsg, (*it)->getFD());
+						recipientExists = true;
+                        break;
                     }
                 }
-                errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
-                return;
+				if (!recipientExists)
+				{
+                	errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
+                	return;
+				}
             }
         }
     }
