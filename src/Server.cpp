@@ -311,7 +311,7 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 		buf.erase(0, pos + 2);
 		pos = buf.find(CRLF);
 
-		std::time_t result = std::time(nullptr);
+		std::time_t result = std::time(NULL);
 		std::string timeres = std::asctime(std::localtime(&result));
 
 		std::cout << YELLOW << timeres << "Received -> " << RESET << line << std::endl;

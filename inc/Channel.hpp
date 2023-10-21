@@ -49,8 +49,6 @@ class Channel
 			bool 						userExist(const std::string& nickname);
 			bool						nickMember(std::string nickname);
 			bool						Guest(Client *client);
-			bool						fdIsInvited(int fdc);
-			bool						fdIsBanned(int fdc);
 
 	private:
 			std::vector<Client*>		_usr;

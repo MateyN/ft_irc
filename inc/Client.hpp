@@ -33,13 +33,8 @@ class Client
 		std::string	getUsername();
 
 		std::string	getHost();
-		bool isRegister();
-		void setIsRegister(bool registered);
-
-		//void 		joinChannel(Channel *channel);
-		//void 		leaveChannel(Channel &channel);
-		//bool		inChannel(const std::string& channel_name);
-
+		bool 		isRegister();
+		void 		setIsRegister(bool registered);
 
 	private:
 		int			_fd;

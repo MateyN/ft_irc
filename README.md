@@ -20,20 +20,20 @@
 		- [X] define nickname
 		- [X] define username
 		- [X] join channel
-		- [ ] send private message (PM) TO DO
-		- [ ] receive PM TO DO
+		- [X] send private message (PM) TO DO
+		- [X] receive PM TO DO
 		- [X] all sent messages in a channel must be transmitted to all clients who joined this specific channel
 		- [X] we must have operators and basic users
 		- [ ] implement specific commands to channel operators :
 			- [X] KICK : kick client from chan
-			- [ ] INVITE : invite client to chan TO TEST
+			- [X] INVITE : invite client to chan
 			- [X] TOPIC : modify or display chan theme
-			- [ ] MODE : TO DO
-				- [ ] -i : define/delete chan as invitation only
-				- [ ] -t : define/delete restrictions on TOPIC comand for chan operators
-				- [ ] -k : define/delete password chan
-				- [ ] -o : give/remove operator chan privilege
-				- [ ] -l : define/delete Nmax users for this chan
+			- [X] MODE : TO DO
+				- [X] -i : define/delete chan as invitation only
+				- [X] -t : define/delete restrictions on TOPIC comand for chan operators
+				- [X] -k : define/delete password chan
+				- [X] -o : give/remove operator chan privilege
+				- [X] -l : define/delete Nmax users for this chan
 	- [X] fcntl(fd, F_SETFL, O_NONBLOCK) instead of write() (MACOS), use file descriptors in non-blocking fd ([tuto](https://www.linuxtoday.com/blog/blocking-and-non-blocking-i-0/))
 	- [ ] tests / error handling :
 		- [ ] server : partially received data
@@ -45,7 +45,7 @@
 	- [X] receive clients
 - [o] client :
 	- [X] choose which client to use ([irssi](https://irssi.org/) ?)
-	- [ ] connect to port password :
+	- [X] connect to port password :
 		- [ ] *register* its connection (NICK, USER)
 
 # TESTS (<c-space> to tick on vimwiki)
@@ -66,50 +66,50 @@
 	- [X] /part new : when leaving it (add a cout when leaving to display all chans) is channel still up ? Should it be ?
 - [ ] [i] /join ichan; [i+1] /join ichan : i must see i+1
 - [X] /join : test with no params
-- [ ] how a chop is recognizable?
-- [ ] ERROR : when "/join chan", was not able to join
+- [X] how a chop is recognizable? "@" but not seen by everyone, cause of irssi configs
+- [X] ERROR : when "/join chan", was not able to join
 ### MODE k (chop)
-- [ ] [i] /join new; /mode new +k pass; [i+1] /join new : if fd bad pass to chan, does not work 
-	- [ ] [i+1] /join new pass : and can enter
-	- [ ] [i] /mode <chan> -k : and i+1 can join theirself now
+- [X] [i] /join new; /mode new +k pass; [i+1] /join new : if fd bad pass to chan, does not work 
+	- [X] [i+1] /join new pass : and can enter
+	- [X] [i] /mode <chan> -k : and i+1 can join theirself now
 ### MODE o (chop)
-- [ ] [i] /mode <chan> +o <i+1> : and i+1 becomes chop
+- [X] [i] /mode <chan> +o <i+1> : and i+1 becomes chop
 	- [ ] [i] /mode <chan> +o <i+1> : tries other chop mode, and does not work
 	- [ ] [i+1] /mode <chan> +o <i> : i+1 can give back to i
 - [ ] [i, notchop] /mode <chan> +o <i> : and i does not become chop
 ### MODE l (chop)
-- [ ] [i] /mode chan +l 1
-	- [ ] [i+1] /join chan : test above limit, does not work
-	- [ ] [i] /mode chan +l 0; [i+1] /join chan : does not work (set a smaller limit but cannot go higher)
-	- [ ] [i] /mode chan +l 2; [i+1] /join chan : works (set a bigger limit but cannot go higher)
-	- [ ] [i+2] /join chan : does not work
+- [X] [i] /mode chan +l 1
+	- [X] [i+1] /join chan : test above limit, does not work
+	- [X] [i] /mode chan +l 0; [i+1] /join chan : does not work (set a smaller limit but cannot go higher)
+	- [X] [i] /mode chan +l 2; [i+1] /join chan : works (set a bigger limit but cannot go higher)
+	- [X] [i+2] /join chan : does not work
 ## PRIVMSG <receiver> <text to be sent>
-- [ ] /privmsg : one param gives 412
-- [ ] [i] /join new; [i+1] /join new; [i] /privmsg new; [i+1] receivesthemessage : if target is channel, see that it is received by ALL chan clients and not others
-- [ ] [i] /privmsg i1 hello; [i1] receivesmessagehello; [i2] nothing; if target is user, see that received only by her
-- [ ] [i] /privmsg iNO hello; if target is wrong, send 401
-- [ ] [i] /privmsg i hello; one client, sends to him self, should it be possible ?
-- [ ] ERROR : when in chan, "Send" shows a 404, it should not
+- [X] /privmsg : one param gives 412
+- [X] [i] /join new; [i+1] /join new; [i] /privmsg new; [i+1] receivesthemessage : if target is channel, see that it is received by ALL chan clients and not others
+- [X] [i] /privmsg i1 hello; [i1] receivesmessagehello; [i2] nothing; if target is user, see that received only by her
+- [X] [i] /privmsg iNO hello; if target is wrong, send 401
+- [X] [i] /privmsg i hello; one client, sends to him self, should it be possible ? YES :D
+- [X] ERROR : when in chan, "Send" shows a 404, it should not
 ## KICK <username> (chop)
-- [ ] [i] /kick; no param gives 461
-- [ ] [i] /kick i; does not work !
+- [X] [i] /kick; no param gives 461
+- [X] [i] /kick i; does not work !
 - [ ] [i] /kick i1notloggedinchan; kick i+1 when not currently logged in channel, should work
 - [ ] [i] /kick i1notjoinedchan; kick i+1 when not joined in channel, should not work
 ## INVITE <nickname> <channel> (chop)
-- [ ] /invite | /invite i1 : no param gives 461
+- [X] /invite | /invite i1 : no param gives 461
 - [ ] /invite i1 chan; invite i+1 when not joined in channel, should work
 ### MODE i (chop)
-- [ ] [i] /join new; /mode new +i; [i+1] /join new : if fd not invited, should not work
-	- [ ] [i] /invite i1 new : and now i+1 can join
+- [X] [i] /join new; /mode new +i; [i+1] /join new : if fd not invited, should not work
+	- [X] [i] /invite i1 new : and now i+1 can join
 	- [ ] [i] /mode new -i : to chan and i+1 can join theirself now
 ## TOPIC <channel> [<topic>] (chop)
-- [ ] /topic : no param gives 461
-- [ ] /join chan; /topic chan : with chan only shows current topic
+- [X] /topic : no param gives 461 | gives topicname
+- [X] /join chan; /topic chan : with chan only shows current topic
 - [ ] /topic channeverbeen : not registered to channel shows 442
 - [ ] /topic chan newtopic; /topic chan : with chan and topic changes topic
 ### MODE t (chop)
-- [ ] /join chan; /mode chan -t; [i1] /topic chan icanchangetopic : i+1 can change topic
-	- [ ] [i] /mode chan -t; [i1] /topic chan icanNOTchangetopic : i+1 cannot change topic
+- [X] /join chan; /mode chan -t; [i1] /topic chan icanchangetopic : i+1 can change topic
+	- [X] [i] /mode chan -t; [i1] /topic chan icanNOTchangetopic : i+1 cannot change topic
 
 # Doc
 

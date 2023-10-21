@@ -162,26 +162,6 @@ void	Channel::eraseUser(Client *client, int fd)
 	}
 }
 
-bool	Channel::fdIsInvited(int fdc)
-{
-	for (std::vector<int>::iterator	it = _invite.begin(); it != _invite.end(); it++)
-	{
-		if ((*it) == fdc)
-			return (true);
-	}
-    return (false);
-}
-
-bool	Channel::fdIsBanned(int fdc)
-{
-	for (std::vector<int>::iterator	it = _banned.begin(); it != _banned.end(); it++)
-	{
-		if ((*it) == fdc)
-			return (true);
-	}
-    return (false);
-}
-
 bool	Channel::User(Client *client)
 {
 	for (std::vector<Client*>::iterator it = _usr.begin(); it != _usr.end(); it++)
@@ -202,6 +182,7 @@ bool	Channel::userExist(const std::string& nickname)
 	return false;
 }
 
+/*
 bool Channel::addOp(Client *client)
 {
     if (!_op.empty())
@@ -221,21 +202,64 @@ bool Channel::addOp(Client *client)
 
     if (user)
     {
-		//for (std::vector<Client*>::iterator itc = _op.begin(); itc != _op.end(); itc++)
-		//{
-		//	if (client->getFD() == (*itc)->getFD())
-		//	{
-		//		std::cout << "Already an operator -> " + (*itc)->getNickname() << std::endl;
-		//		return (false);
-		//	}
-		//}
+		for (std::vector<Client*>::iterator itc = _op.begin(); itc != _op.end(); itc++)
+		{
+			if (client->getFD() == (*itc)->getFD())
+			{
+				std::cout << "Already an operator -> " + (*itc)->getNickname() << std::endl;
+				return (false);
+			}
+		}
         _op.push_back(client);
         return (true);
     }
     std::cout << "Not a member -> " + client->getNickname() << std::endl;
     return (false);
 }
+*/
 
+bool Channel::addOp(Client *client)
+{
+    bool user = false;
+    for (std::vector<Client *>::iterator it = _usr.begin(); it != _usr.end(); it++)
+	{
+        if (client->getFD() == (*it)->getFD())
+		{
+            user = true;
+            break;
+        }
+    }
+
+    if (user)
+	{
+        bool isOperator = false;
+        for (std::vector<Client*>::iterator itc = _op.begin(); itc != _op.end(); itc++) 
+		{
+            if (client->getFD() == (*itc)->getFD()) 
+			{
+                isOperator = true;
+                break;
+            }
+        }
+
+        if (!isOperator) 
+		{
+	        _op.push_back(client);
+            std::cout << "Added operator: " << client->getNickname() << std::endl;
+            return true;
+        }
+		else 
+		{
+            std::cout << "Client is already an operator: " << client->getNickname() << std::endl;
+            return false;
+        }
+    } 
+	else 
+	{
+        std::cout << "Client is not a member of the channel: " << client->getNickname() << std::endl;
+        return (false);
+    }
+}
 
 bool	Channel::eraseOp(Client *client)
 {

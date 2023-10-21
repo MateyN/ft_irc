@@ -171,7 +171,6 @@ void Server::JOIN(Client *client, Channel *channel)
 {
 	std::cout << GREEN << "COMMAND JOIN" << RESET << std::endl;
 	std::cout << GREEN << "-------------" << RESET << std::endl;
-    (void)channel;
 
     std::vector<std::string> channelsToJoin;
     std::string pass;
@@ -268,6 +267,7 @@ void Server::JOIN(Client *client, Channel *channel)
 			// Create chan and add user in it
 			channels = addChan((*iter));
 			std::cout << "Channel [" + (*iter) + "] created." << std::endl;
+			std::cout << "Channel Name: " << channels->getChanName() << std::endl;
 			channels->addUser(client);
 
 			/* if (!isChanExist || channels->getOp().begin() != channels->getOp().end()) */
@@ -275,8 +275,8 @@ void Server::JOIN(Client *client, Channel *channel)
 			msg = "MODE " + (*iter) + " +o "+ client->getNickname();
 			msgSend(msg, client->getFD());
 			channels->addOp(client);
-			std::cout << "op :" << (*channels->getOp().begin())->getUsername() << std::endl;
 			// KR : CHAN SET OP CLIENT
+			//break;
 		}
 
 		// Set topic
@@ -407,15 +407,14 @@ void Server::KICK(Client* client, Channel* channel)
 {
 	std::cout << GREEN << "COMMAND KICK" << RESET << std::endl;
 	std::cout << GREEN << "-------------" << RESET << std::endl;
+
+	if (!channel)
+	{
+		return ;
+	}
     // Check if the user is an operator in the channel
     if (channel->Op(client) == true)
 	{
-        //errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
-		//std::string msg = channel->getChanName() + " You must be a channel operator";
-        //return;
-    //}
-
-    // Parse the KICK command
     	std::string recipient;
 		std::string reason;
 		size_t doubleColonPos = cmd.find(" :");
@@ -461,9 +460,6 @@ void Server::KICK(Client* client, Channel* channel)
 	else
 	{
 		errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
-        //std::string errorMsg = channel->getChanName() + " :You must be a channel operator!";
-        //sendToUsersInChan(errorMsg, client->getFD());
-		//return ;
 	}
 }
 
@@ -544,66 +540,44 @@ void Server::TOPIC(Client* client, Channel* channel)
 	else
 	{
     	pos = cmd.find(":");
-        if (pos != std::string::npos && pos + 1 != cmd.size())
+        if (pos != std::string::npos && (std::string::npos + 1) != cmd.size())
             topicName = cmd.substr(pos + 1);
         else
             topicName = cmd;
-		std::string oldTopic = channel->getTopic();
 		channel->setTopic(topicName, client);
-		if (topicName.empty())
-		{
-            msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName() + " :" + topicName;
-        }
-        else
-        {
-            msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName() + " :" + topicName + " (was: " + oldTopic + ")";
-        }
-    }
+		msg = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
+	}
 	msgSend(msg, client->getFD());
     sendToUsersInChan(msg, client->getFD());
-    std::string reply = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
-    msgSend(reply, client->getFD());
 }
 
-//	To avoid sending messages when not in channel. How many times the substr appears in the /msg string
-size_t countOccurrences(const std::string &input, std::string &substr) 
-{
-	if (substr.length() == 0) 
-		return 0;
-	size_t i = 0;
-	std::size_t lastIndex = substr.find_last_not_of(' ');
-	if (lastIndex != std::string::npos) 
-	{
-		substr = substr.substr(0, lastIndex + 1);
-	}
-	for (size_t pos = input.find(substr); pos != std::string::npos;
-		 pos = input.find(substr, pos + 1))
-	{
-		i++;
-	}
-	return i;
-}
-
-void	Server::PRIVMSG(Client* client, Channel* channel) 
+void	Server::PRIVMSG(Client *client, Channel *channel) 
 {
 	std::cout << GREEN << "COMMAND PRIVMSG" << RESET << std::endl;
-	std::cout << GREEN << "-------------" << RESET << std::endl;
+	std::cout << GREEN << "----------------" << RESET << std::endl;
 
     bool 		messageSend = false;
     size_t 		msgStart = cmd.find(':');
     std::string recipient = cmd.substr(1, msgStart - 1);
     std::string msgContent = cmd.substr(msgStart + 1);
 
-    if (msgContent.empty()) 
+    if (msgContent.empty() || recipient.empty()) 
 	{
         errorMsg(ERR412_NOTEXTTOSEND, client->getFD(), "", "", "", "");
         return;
     }
 	
     recipient = '#' + recipient;
+	size_t count = 0;
+    size_t pos = 0;
 
-	std::size_t count = countOccurrences(cmd, recipient);
-    
+	//	To avoid sending messages when not in channel. How many times the substr appears in the /msg string
+	while ((pos = cmd.find(recipient, pos)) != std::string::npos) 
+    {
+        count++;
+        pos += recipient.size();
+    }
+
 	if (count > 1)
 	{
         std::string msg = ':' + client->getNickname() + '@' + client->getHost() + " " + token + " " + recipient + " :" + msgContent;
@@ -671,63 +645,53 @@ void	Server::PRIVMSG(Client* client, Channel* channel)
             if (nick != std::string::npos) 
 			{
                 std::string nickname = cmd.substr(0, nick);
+				if (nickname == client->getNickname()) 
+            	{
+                	// Prevent sending the private message to yourself
+					std::cout << "Cannot send privmsg to yourself" << std::endl;
+                	//errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
+                	return;
+            	}
+				bool recipientExists = false;
                 for (std::vector<Client*>::iterator it = _cli.begin(); it != _cli.end(); it++) 
 				{
                     if (nickname == (*it)->getNickname()) 
 					{
-						//sending the prriv msg to the user
-                        std::string privmsg = ":" + client->getNickname() + " " + token + " " + (*it)->getNickname() + " :" + priv;
-                        msgSend(privmsg, (*it)->getFD());
-                        return;
+						std::string privmsg = ":" + client->getNickname() + " " + token + " " + (*it)->getNickname() + " :" + priv;
+						msgSend(privmsg, (*it)->getFD());
+						recipientExists = true;
+                        break;
                     }
                 }
-                errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
-                return;
+				if (!recipientExists)
+				{
+                	errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), "", "", "");
+                	return;
+				}
             }
         }
     }
-    //errorMsg(ERR404_CANNOTSENDTOCHAN, client->getFD(), channel->getChanName(), "", "", "");
 }
-/*
-std::vector<std::string> Server::parseModeArguments(const std::string &cmd, size_t pos) 
-{
-    std::vector<std::string> args;
-    size_t endPos;
-    size_t tmp;
-
-    while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size()) 
-	{
-        endPos = cmd.find(" ", (pos + 1));
-        if (endPos == std::string::npos)
-            endPos = cmd.size();
-        tmp = pos + 1;
-        args.push_back(cmd.substr(tmp, endPos - tmp));
-        pos = endPos;
-    }
-
-    return args;
-}
-*/
 
 void Server::MODE(Client *client, Channel *channel) 
 {
     std::cout << GREEN << "COMMAND MODE" << RESET << std::endl;
 	std::cout << GREEN << "-------------" << RESET << std::endl;
 
-    std::string msg = "";
+    std::string msg;
     std::string chanName;
     std::vector<std::string> args;
     size_t pos = 0;
     size_t endPos;
     bool isModeAdded = false;
 
-    if (cmd == (client->getNickname() + " +l"))
+    if (cmd == (client->getNickname() + " +i"))
         return;
 
-    chanName = parseChannel(cmd, 0);
-    bool isChan = chanExist(chanName);
+	chanName = parseChannel(cmd, 0);
+	bool isChan = chanExist(chanName);
 
-    if (!isChan) 
+	if (!isChan)
 	{
         errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), client->getNickname(), chanName, "", "");
         return;
@@ -740,449 +704,163 @@ void Server::MODE(Client *client, Channel *channel)
     }
 
     pos = chanName.size() + 1;
-    while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size()) 
+	if (cmd.empty())
+	{
+		errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+		return ;
+	}
+
+	while ((pos = cmd.find(" ", pos)) != std::string::npos && pos < cmd.size())
 	{
         endPos = cmd.find(" ", (pos + 1));
         if (endPos == std::string::npos)
             endPos = cmd.size();
-        std::string arg = cmd.substr((pos + 1), endPos - pos - 1);
+        std::string arg = cmd.substr((pos + 1), ((endPos - pos) - 1));
         args.push_back(arg);
         pos = endPos;
     }
 
-    if (args.size() == 0) 
+	if (args.size() > 3)
 	{
-        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
-        return;
-    }
-
-    int limit = std::atoi(args.front().c_str());
-
-    if (limit <= 0) 
-	{
-        errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
-        return;
-    }
-
-    isModeAdded = (cmd.find("+") != std::string::npos);
-    channel->setLimit(isModeAdded, limit);
-	std::string modeChange;
-	if (isModeAdded) 
-	{
-		modeChange = "+l";
-	} 
-	else 
-	{
-		modeChange = "-l";
+		errorMsg(ERR472_UNKNOWNMODE, client->getFD(), client->getNickname(), "", ":Too many arguments", "");
+		return;
 	}
-   	msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " " + modeChange + " " + args.front() + " :Channel limit set to " + args.front();
 
-    if (!msg.empty()) 
-	{
-        msgSend(msg, client->getFD());
-        sendToUsersInChan(msg, client->getFD());
-    }
-}
+		pos = 0;
+		if (cmd.find("+") != std::string::npos)
+			isModeAdded = true;
+		else
+			isModeAdded = false;
 
-
-// TODO
-/*
-//Should be as PRIVMSG when done
-
-void	Server::NOTICE(Client *client, Channel *channel)
-{
-	std::cout << "COMMAND NOTICE" << std::endl;
-	std::cout << "---------------" << std::endl;
-
-*/
-/*
-// parse the KICK command and extract channel, nick, and reason.
-bool Server::parseKickCommand(const std::string &kick, std::string &chan, std::string &nick, std::string &reason)
-{
-    size_t doubleColonPos = kick.find(':');
-    if (doubleColonPos == std::string::npos)
-	{
-        return false; // invalid command format, missing ':'.
-    }
-    size_t space = kick.find(' '); // space position
-    if (space == std::string::npos)
-	{
-        return false; // invalid command format, missing space.
-    }
-    chan = kick.substr(space + 1, doubleColonPos - space - 1);
-
-    size_t nickStart = space + chan.size() + 2; // Skip ' ' and ':'
-    size_t reasonStart = doubleColonPos + 1;
-    if (reasonStart >= kick.size())
-	{
-        return false; // invalid command format, missing reason.
-    }
-    size_t reasonLength = kick.size() - reasonStart;
-    nick = kick.substr(nickStart, doubleColonPos - nickStart);
-    reason = kick.substr(reasonStart, reasonLength);
-
-    return true;
-}
-
-//////////////////////
-//  CHANNEL DEBUG  //
-////////////////////
-void Server::LIST(Client *client, Channel *channel)
-{
-	(void)channel;
-    std::string channelList;
-    for (std::vector<Channel*>::iterator it = _chan.begin(); it != _chan.end(); ++it)
-    {
-        channelList += (*it)->getChanName() + " ";
-    }
-    std::string response = "Channel List: " + channelList;
-    msgSend(response, client->getFD());
-}
-*/
-
-/*
-std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nick, Channel &channel)
-{
-	std::vector<Client *>	usrList = channel.getUser();
-	std::vector<Client *>::iterator it = usrList.begin();
-	while (it != usrList.end())
-	{
-		if (!nick.empty() && nick == ((*it))->getNickname())
-			return (it);
-		it++;
-	}
-	return (it);
-}
-*/
-/*
-// NOTES :
-// 1. Change "!!!" which corresponds to var names
-// 2. Do connection registration
-//
-
-void	Server::callCmd(Client &client, const std::string& cmd, std::vector<std::string> &params)
-{
-	std::string valid_commands[5] =
-	{
-		"NICK",
-		"USER",
-		"JOIN",
-		"PART",
-		"PRIVMSG", // receive PM
-		// operators
-		//"KICK", 
-		// "MODE", 
-		// "OPER",
-		// "INVITE",
-		// "TOPIC", 
-		// //  
-		// "PING", 
-		// "QUIT", 
-		// "KILL" 
-	};
-
-	int	idx = 0;
-	while (idx < 5)
-	{
-		if (cmd == valid_commands[idx])
-			break;
-		idx++;
-	}
-	switch (idx + 1)
-	{
-		case 1: cmdNick(client, params[0]); break;
-		case 2: cmdUser(client, params[0]); break;
-		case 3: cmdJoin(client, params); break;
-		case 4: cmdPart(client, params); break;
-		case 5: cmdMsg(client, params); break;
-		case 6: cmdKick(client, params); break;
-		// case 11: cmdInvite(void); break; 
-		//case 12: cmdTopic(*this, client, params); break; 
-		// case 6: cmdMode(*this, client, params); break; 
-		// case 9: cmdOper(*this, client, params); break; 
-		// case 13: cmdPing(client); break; 
-		// case 14: cmdQuit(client); break; 
-    	// case 15: cmdKill(*this, client, params); break;
-	}
-}
-
-bool	Server::findNickname(const std::string &nick)
-{
-	std::vector<Client *>::iterator it;
-	for (it = _cli.begin(); it != _cli.end(); it++)
-	{
-		if (!nick.empty() && nick == ((*it))->getNickname())
-			return (false);
-	}
-	return (true);
-}
-
-bool	Server::findUserClient(const std::string &user)
-{
-	std::vector<Client *>::iterator it;
-	for (it = _cli.begin(); it != _cli.end(); it++)
-	{
-		if (!user.empty() && user == ((*it))->getUser())
-			return (false);
-	}
-	return (true);
-}
-
-std::vector<Channel *>::iterator	Server::findChannel(const std::string &chan)
-{
-	std::vector<Channel *> channels = getChan();
-	std::vector<Channel *>::iterator it;
-	for (it = channels.begin(); it != channels.end(); it++)
-	{
-		if (!chan.empty() && chan == ((*it))->getChanName())
-			return (it);
-	}
-	return (_chan.end());
-}
-
-std::vector<Client *>::iterator	Server::findClientChannel(const std::string &nick, Channel &channel)
-{
-	std::vector<Client *>	usrList = channel.getUsr();
-	std::vector<Client *>::iterator it = usrList.begin();
-	while (it != usrList.end())
-	{
-		if (!nick.empty() && nick == ((*it))->getNickname())
-			return (it);
-		it++;
-	}
-	return (it);
-}
-
-bool	Server::cmdNick(Client &client, const std::string &nick)
-{
-// input :
-// callCmd(client, bufcmd, newnick); // with bufcmd being the command in buffer, newnick being the new nickname chosen by client
-	std::cout << "Server: Execute cmdNick" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:431, no nickname
-	if (nick.length() <= 0)
-	{
-		msg = ERR431_NONICKNAMEGIVEN;
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// err:432, nick not valid
-	else if (nick.length() <= 8)
-	{
-		msg = ERR432_ERRONEUSNICKNAME(nick);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// err:433, nick already exists
-	else if (!findNickname(nick))
-	{
-		msg = ERR433_NICKNAMEINUSE(nick);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// TRUE, change nick
-	// CHANGE IT IF YOU MUST DO IT AT BEGINING OF CONNECTION
-	msg = TOSTR(MSG(client.getNickname(), client.getUser(), "NICK", nick));
-	if (client.getNickname()[0] == '@') // for chop
-		client.setNickname("@" + nick);
-	else
-		client.setNickname(nick);
-	send(fdc, msg.c_str(), msg.length(), 0);
-	return (true);
-}
-
-bool	Server::cmdUser(Client &client, std::string user)
-{
-// input :
-// callCmd(client, bufcmd, newuser); // with bufcmd being the command in buffer, newuser being the new user chosen by client
-	std::cout << "Server: Execute cmdUser" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:461, need more params
-	if (user.length() <= 0)
-	{
-		msg = ERR461_NEEDMOREPARAMS("USER");
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// err:462, already registered
-	else if (!this->findUserClient(user))
-	{
-		msg = ERR462_ALREADYREGISTERED;
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// TRUE, set user
-	client.setUser(user);
-	msg = MSG(client.getNickname(), client.getUser(), "USER", user);
-	send(fdc, msg.c_str(), msg.length(), 0);
-	return (true);
-}
-
-void	Server::cmdJoinNames(Client &client, Channel &channel)
-{
-	int			fdc = client.getFD();
-	std::vector<Client*> users = channel.getUsr();
-	std::string	msg;
-	std::ostringstream msgO;
-	for (std::vector<Client*>::iterator it = users.begin(); it != users.end(); ++it)
-	{
-		Client* user = *it;
-		std::vector<Client*> ops = channel.getOp();
-		for (std::vector<Client*>::iterator itOp = ops.begin(); itOp != ops.end(); ++itOp)
+		if (cmd.find("t") != std::string::npos)
 		{
-			if (user->getNickname() == (*itOp)->getNickname())
-				msgO << "@" << user->getNickname();
+			channel->setTopicMode(isModeAdded);
+			if (isModeAdded)
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Only channel operators may set the channel topic";
 			else
-				msgO << user->getNickname();
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel topic can be set by everyone";	
 		}
-		if (std::distance(it, users.end()) > 1) {
-			msgO << " "; // Add a space after each nickname, except for the last one
-		}
-	}
-	std::string nickList = msgO.str();
-	msg = RPL353_NAMREPLY(client.getNickname(), client.getUser(), nickList);
-	send(fdc, msg.c_str(), msg.length(), 0);
-	msg = RPL366_ENDOFNAMES(client.getNickname(), channel.getChanName());
-	send(fdc, msg.c_str(), msg.length(), 0);
-}
-
-bool	Server::cmdJoin(Client &client, std::vector<std::string> &params)
-{
-// input :
-// pwd is password from buffer
-	(void)params; // delete when retreive params
-	std::string chanName = ""; // change to appropriate params[i] or what should fit
-	std::string pwd = ""; // change to appropriate params[i] or what should fit
-	std::string	msg;
-	std::cout << "Server: Execute cmdJoin" << std::endl;
-	int									fdc = client.getFD();
-	// err:461, need more params
-	if (chanName.length() <= 0)
-	{
-		msg = ERR461_NEEDMOREPARAMS("JOIN");
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	else if (chanName[0] != '#')
-	{
-		msg = ERR403_NOSUCHCHANNEL(chanName);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	std::vector<Channel *>::iterator	chanIt = findChannel(chanName);
-	if (chanIt == _chan.end()) // if chan does not exist, create it
-		addChan(chanName, &client); // UNDEFINED : client or *client ??
-	else // if chan exists
-	{
-		Channel *channel = (*chanIt);
-		// err:473, invit only
-		if (!(*chanIt)->fdIsInvited(client.getFD()))
+		else if (cmd.find("o") != std::string::npos)
 		{
-			msg = ERR473_INVITEONLYCHAN(TOSTR(chanName));
-			send(fdc, msg.c_str(), msg.length(), 0);
-			return (false);
-		}
-		// err:474, banned
-		if (!channel->fdIsBanned(client.getFD()))
-		{
-			msg = ERR474_BANNEDFROMCHAN(chanName);
-			send(fdc, msg.c_str(), msg.length(), 0);
-			return (false);
-		}
-		// err:475, bad pass
-		if (channel->getPassword() != pwd)
-		{
-			msg = ERR475_BADCHANNELKEY(chanName);
-			send(fdc, msg.c_str(), msg.length(), 0);
-			return (false);
-		}
-		// TRUE, let client enter it and msg all
-		if (!client.inChannel(chanName))
-		{
-			client.joinChannel(channel);
-			msg = MSG(client.getNickname(), client.getUser(), "JOIN", chanName);
-			send(fdc, msg.c_str(), msg.length(), 0);
-			msg = MSG(client.getNickname(), client.getUser(), "JOIN", chanName);
-			sendToUsersInChan(*channel, client, msg);
-			// std::vector<Client *> users = channel->getUsr(); 
-			// for (std::vector<Client *>::iterator u_it = users.begin(); u_it != users.end(); u_it++) 
-			// { 
-			// 	if ((*u_it)->getNickname() != client.getNickname()) 
-			// 		send((*u_it).getFD(), TOSTR(MSG(client.getNickname(), client.getUser() "JOIN", chanName)); 
-			// }
-			if (!channel->getTopic().empty())
+			if (args.size() == 0)
 			{
-				msg = RPL332_TOPIC(client.getNickname(), chanName, channel->getTopic());
-				send(fdc, msg.c_str(), msg.length(), 0);
+				errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), channel->getChanName(), "Invalid channel limit", "", "");
+				return ;
 			}
-			cmdJoinNames(client, *channel);
-			return (true);
+
+			std::string username = args.back();
+			bool userExists = false;
+			for (std::vector<Client *>::iterator it = _cli.begin(); it != _cli.end(); ++it)
+			{
+				if ((*it)->getNickname() == username)
+				{
+					userExists = true;
+					break;
+				}
+			}
+
+			if (!userExists)
+			{
+				errorMsg(ERR401_NOSUCHNICK, client->getFD(), client->getNickname(), username, "", "");
+				return;
+			}
+
+			bool opAdded = channel->setOp(isModeAdded, username);
+
+			if (opAdded)
+			{
+
+				if (isModeAdded)
+				{
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +o " + username + " :" + "has been set as an operator";
+				}
+				else
+				{
+					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " -o " + username + " :" + "has been removed from operators";
+				}
+			}
+			else
+			{
+				errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
+				return;
+			}
 		}
-	}
-	return (false);
-}
 
-bool	Server::cmdMsg(Client &client, std::vector<std::string> &params)
-{
-//input:
-//params : msgtarget, texttobesent
-	std::cout << "Server: Execute cmdMsg" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:411, no recipient
-	if (params.size() == 0)
-	{
-		msg = ERR411_NORECIPIENT("PRIVMSG");
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	// err:412, no text to send
-	if (params.size() == 1)
-	{
-		msg = ERR412_NOTEXTTOSEND;
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
-	std::vector<Channel *>::iterator itCh = findChannel(params[0]);
-	if (itCh != _chan.end()) // if target is channel, send to all 
-	{
-		msg = MSG(client.getNickname(), client.getUser(), "PRIVMSG", params[1]);
-		sendToUsersInChan(*(*itCh), client, msg);
-		return (true);
-	}
-	else if (findNickname(client.getNickname())) // if target is client
-	{
-		msg = MSG(client.getNickname(), client.getUser(), "PRIVMSG", params[1]);
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (true);
-	}
-	msg = ERR401_NOSUCHNICK(client.getNickname());
-	send(fdc, msg.c_str(), msg.length(), 0);
-	return (false);
-}
+		else if (cmd.find("l") != std::string::npos)
+		{
+			if (args.size() == 0 && (isModeAdded))
+			{
+				errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+				return ;
+			}
 
-// KR : when to use CAP ?
-// bool	Server::cmdCAP(void) 
-// { 
-// 	std::cout << "Server: Execute cmdCAP" << std::endl; 
-// } 
+			if (isModeAdded)
+			{
+				int limit = std::atoi(args.front().c_str());
+				if (limit <= 0)
+				{
+					errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+					return ;
+				}
+				channel->setLimit(true, limit);
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been set to " + args.front();			
+			}
+			else
+			{
+				channel->setLimit(false, 0);
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been removed";
+			}
+		}
+		else if (cmd.find("k") != std::string::npos)
+		{
+			if (args.size() == 0 && (isModeAdded))
+			{
+				errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+				return ;
+			}
+			
+			if (isModeAdded)
+			{
+				std::string	passw;
+				if (args.size() == 1)
+					passw = args.front();
+				else if (args.size() == 2)
+				{
+					if (channel->isNumber(args.front()))
+						passw = args[1];
+					else
+						passw = args.front();
+				}
+				else
+					passw = args[1];
 
-bool	Server::cmdMode(Client &client, std::vector<std::string> &params)
-{
-//input:
-//params : target modes
-	(void)params;
-	std::cout << "Server: Execute cmdMode" << std::endl;
-	int			fdc = client.getFD();
-	std::string	msg;
-	// err:461, need more params
-	if (params.size() < 2)
-	{
-		msg = ERR461_NEEDMOREPARAMS("MODE");
-		send(fdc, msg.c_str(), msg.length(), 0);
-		return (false);
-	}
+				channel->setChanPass(passw);
+			}
+
+			channel->setPassMode(isModeAdded);
+			if (isModeAdded)
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :a password key has been set";			
+			else
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :the password key has been removed";
+		}
+		else if (cmd.find("i") != std::string::npos)
+		{
+			channel->setInviteMode(isModeAdded);
+
+			if (isModeAdded)
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :invite only activated";			
+			else
+				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :invite only deactivated";
+		}
+		else
+		{
+			errorMsg(ERR472_UNKNOWNMODE, client->getFD(), "", "", "", "");
+			return;
+		}
+
+		if (!msg.empty())
+		{
+			msgSend(msg, client->getFD());
+			sendToUsersInChan(msg, client->getFD());
+		}
 }
-*/
