@@ -690,9 +690,7 @@ std::vector<std::string> Server::parseModeArguments(std::string command)
     }
 
     command = command.substr(start, end - start);
-
     bool isModeAdded = false;
-
     for (size_t i = 0; i < command.size(); i++) 
 	{
         if (command[i] == '+') 
@@ -727,7 +725,6 @@ std::vector<std::string> Server::parseModeArguments(std::string command)
 				{
                     entryPoint = "-";
                 }
-
                 entryPoint += modeFlag;
                 modes.push_back(entryPoint);
             }
