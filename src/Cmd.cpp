@@ -5,7 +5,7 @@
 
 void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 {
-	std::string valid_commands[13] = {"CAP", "PING", "PASS", "JOIN", "NICK", "USER", \
+	std::string valid_commands[13] = {"CAP", "PING", "PASS",  "NICK", "USER", "JOIN", \
 		"PART", "QUIT", "KICK", "INVITE", "TOPIC", "PRIVMSG", "MODE" };
 
 	void	(Server::*funcPtr[])(Client *client, Channel *channel) =
@@ -13,9 +13,9 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		&Server::CAP,
 		&Server::PING,
 		&Server::PASS,
-		&Server::JOIN,
 		&Server::NICK,
 		&Server::USER,
+		&Server::JOIN,
 		&Server::PART,
 		&Server::QUIT,
 		&Server::KICK,
@@ -30,7 +30,7 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 		if (cmd.compare(valid_commands[i]) == 0)
 		{
 			// PASS needs to be set before calling other commands, CAP, PING, PASS can be done without isRegistered()
-			if (!client->isRegister() && i >= 4) 
+			if (!client->isRegister() && i >= 3) 
 			{
 				std::cout << "PASS" << std::endl;
 				errorMsg(ERR464_PASSWDMISMATCH, client->getFD(),"", "", "", "");
@@ -185,7 +185,6 @@ void Server::JOIN(Client *client, Channel *channel)
 		return ;
 
 	// Populate channelsToJoin
-	std::cout << "IAMHERE" << std::endl;
 	while ((startPos = cmd.find("#", startPos)) != std::string::npos)
 	{
 		name = parseChannel(cmd, startPos);
@@ -193,7 +192,6 @@ void Server::JOIN(Client *client, Channel *channel)
 			name = '#' + name;
 		channelsToJoin.push_back(name);
 		startPos = startPos + 1;
-		std::cout << name << std::endl;
 	}
 
 	if (channelsToJoin.empty())
@@ -440,16 +438,18 @@ void Server::KICK(Client* client, Channel* channel)
 				std::string kickMsg = ":" + client->getNickname() + " KICK " + channel->getChanName() + " " + recipient + " :" + reason;
 				msgSend(kickMsg, client->getFD());
 
-				int recipientFD = (*it)->getFD();
+				/* int recipientFD = (*it)->getFD(); */
 
 				it = channel->getUser().erase(it);
 				
 				std::string notifyMsg = ":" + client->getNickname() + "!" + client->getUsername() + "@" + client->getHost() + " KICK " + channel->getChanName() + " " + recipient + " :" + reason;
 				sendToUsersInChan(notifyMsg, client->getFD());
-				close(recipientFD);
+				/* close(recipientFD); */
 
 				break;
 			}
+			else
+				recipientFound = false;
 		}
 
 		if (!recipientFound)
