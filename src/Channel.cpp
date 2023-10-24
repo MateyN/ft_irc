@@ -280,7 +280,7 @@ bool	Channel::eraseOp(Client *client)
 		{
 			if (client->getFD() == (*itc)->getFD())
 			{
-				std::cout << "The operator has removed -> " + (*itc)->getNickname() << std::endl;
+				std::cout << "Operator: " + (*itc)->getNickname() + " has left the server." << std::endl;
 				_op.erase(itc);
 				return (true);
 			}

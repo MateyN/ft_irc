@@ -208,7 +208,7 @@ bool	Server::serverConnect()
 					int	send = _pfds[i].fd;
 
 					// Get completeMsg from buffer without \n\r or \n for nc (initiated in recv())
-					msg[send] += TOSTR(buf);
+					msg[send] += TOSTR(buf); // buildingn the complete message by appending packets til we have a full cmd or msg
 					std::string completeMsg = msg[send];
 					if (completeMsg.find(CRLF) != std::string::npos)
 						completeMsg = msg[send].substr(0, msg[send].find(CRLF));
@@ -320,7 +320,7 @@ void	Server::processRecvData(std::string buf, Client *client, Channel *channel)
 			callCmd(token, client, channel); // CALL COMMANDS
 		}
 		else
-			errorMsg(461, client->getFD(), "", "", "", "");
+			errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
 	}
 }
 
