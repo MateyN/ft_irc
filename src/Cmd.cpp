@@ -441,7 +441,6 @@ void Server::KICK(Client* client, Channel* channel)
 				msgSend(kickMsg, client->getFD());
 
 				int recipientFD = (*it)->getFD();
-
 				it = channel->getUser().erase(it);
 				
 				std::string notifyMsg = ":" + client->getNickname() + "!" + client->getUsername() + "@" + client->getHost() + " KICK " + channel->getChanName() + " " + recipient + " :" + reason;
