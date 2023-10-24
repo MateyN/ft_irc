@@ -27,7 +27,8 @@ void	Server::callCmd(std::string cmd, Client *client, Channel *channel)
 	};
 	for (int i = 0; i < 13; i++)
 	{
-		if (cmd.compare(valid_commands[i]) == 0)
+		if (cmd.compare(valid_commands[i]) == 0 ||
+				(i == 4 && cmd.compare("userhost") == 0)) // for user in irssi
 		{
 			// PASS needs to be set before calling other commands, CAP, PING, PASS can be done without isRegistered()
 			if (!client->isRegister() && i >= 3) 
@@ -252,7 +253,7 @@ void Server::JOIN(Client *client, Channel *channel)
 					}
 				}
 
-				std::cout << "Channel [" + (*iter) + "] already exist." << std::endl;
+				/* std::cout << "Channel [" + (*iter) + "] already exist." << std::endl; */
 				channels = (*it);
 				channels->addUser(client);
 				break;
@@ -265,7 +266,7 @@ void Server::JOIN(Client *client, Channel *channel)
 			// Create chan and add user in it
 			channels = addChan((*iter));
 			std::cout << "Channel [" + (*iter) + "] created." << std::endl;
-			std::cout << "Channel Name: " << channels->getChanName() << std::endl;
+			/* std::cout << "Channel Name: " << channels->getChanName() << std::endl; */
 			channels->addUser(client);
 
 			/* if (!isChanExist || channels->getOp().begin() != channels->getOp().end()) */

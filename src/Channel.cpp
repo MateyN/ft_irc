@@ -245,7 +245,7 @@ bool Channel::addOp(Client *client)
         if (!isOperator) 
 		{
 	        _op.push_back(client);
-            std::cout << "Added operator: " << client->getNickname() << std::endl;
+            /* std::cout << "Added operator: " << client->getNickname() << std::endl; */
             return true;
         }
 		else 
