@@ -673,6 +673,69 @@ void	Server::PRIVMSG(Client *client, Channel *channel)
     }
 }
 
+std::vector<std::string> Server::parseModeArguments(std::string command) 
+{
+    std::vector<std::string> modes;
+
+    size_t start = command.find_first_of("+-"); // find the start position of mode in the 'command' string
+    if (start == std::string::npos) 
+	{
+        return modes;
+    }
+
+    size_t end = command.find(" ", start); // find the end position of the mode to avoid for ex. #t channel name to be treated as mode +t
+    if (end == std::string::npos) 
+	{
+        end = command.length(); // if there is no space - the whole string is mode
+    }
+
+    command = command.substr(start, end - start);
+
+    bool isModeAdded = false;
+
+    for (size_t i = 0; i < command.size(); i++) 
+	{
+        if (command[i] == '+') 
+		{
+            isModeAdded = true;
+        } 
+		else if (command[i] == '-') 
+		{
+            isModeAdded = false;
+        } 
+		else 
+		{
+            char modeFlag = command[i]; // The char represents a mode flag.
+
+            std::map<char, int> args;
+            args['i'] = 0;
+            args['t'] = 0;
+            args['k'] = 1;
+            args['o'] = 1;
+            args['l'] = 1;
+
+            std::map<char, int>::iterator it = args.find(modeFlag);
+            if (it != args.end()) 
+			{
+                std::string entryPoint;
+
+                if (isModeAdded) 
+				{
+                    entryPoint = "+";
+                } 
+				else 
+				{
+                    entryPoint = "-";
+                }
+
+                entryPoint += modeFlag;
+                modes.push_back(entryPoint);
+            }
+        }
+    }
+    return modes;
+}
+
 void Server::MODE(Client *client, Channel *channel) 
 {
     std::cout << GREEN << "COMMAND MODE" << RESET << std::endl;
@@ -702,7 +765,8 @@ void Server::MODE(Client *client, Channel *channel)
         errorMsg(ERR482_CHANOPRIVSNEEDED, client->getFD(), client->getNickname(), channel->getChanName(), "Not allowed", "");
         return;
     }
-
+	std::vector<std::string> modes;
+	modes = parseModeArguments(cmd.substr(pos));
     pos = chanName.size() + 1;
 	if (cmd.empty())
 	{
@@ -726,13 +790,15 @@ void Server::MODE(Client *client, Channel *channel)
 		return;
 	}
 
-		pos = 0;
-		if (cmd.find("+") != std::string::npos)
+	pos = 0;
+	for (std::vector<std::string>::iterator it = modes.begin(); it != modes.end(); it++)
+	{
+		if ((*it).find("+") != std::string::npos)
 			isModeAdded = true;
 		else
 			isModeAdded = false;
 
-		if (cmd.find("t") != std::string::npos)
+		if ((*it).find("t") != std::string::npos)
 		{
 			channel->setTopicMode(isModeAdded);
 			if (isModeAdded)
@@ -740,7 +806,7 @@ void Server::MODE(Client *client, Channel *channel)
 			else
 				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel topic can be set by everyone";	
 		}
-		else if (cmd.find("o") != std::string::npos)
+		else if ((*it).find("o") != std::string::npos)
 		{
 			if (args.size() == 0)
 			{
@@ -769,7 +835,6 @@ void Server::MODE(Client *client, Channel *channel)
 
 			if (opAdded)
 			{
-
 				if (isModeAdded)
 				{
 					msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " +o " + username + " :" + "has been set as an operator";
@@ -786,7 +851,7 @@ void Server::MODE(Client *client, Channel *channel)
 			}
 		}
 
-		else if (cmd.find("l") != std::string::npos)
+		else if ((*it).find("l") != std::string::npos)
 		{
 			if (args.size() == 0 && (isModeAdded))
 			{
@@ -811,7 +876,7 @@ void Server::MODE(Client *client, Channel *channel)
 				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :Channel limit has been removed";
 			}
 		}
-		else if (cmd.find("k") != std::string::npos)
+		else if ((*it).find("k") != std::string::npos)
 		{
 			if (args.size() == 0 && (isModeAdded))
 			{
@@ -843,7 +908,7 @@ void Server::MODE(Client *client, Channel *channel)
 			else
 				msg = ":" + client->getNickname() + " MODE " + channel->getChanName() + " :the password key has been removed";
 		}
-		else if (cmd.find("i") != std::string::npos)
+		else if ((*it).find("i") != std::string::npos)
 		{
 			channel->setInviteMode(isModeAdded);
 
@@ -863,4 +928,5 @@ void Server::MODE(Client *client, Channel *channel)
 			msgSend(msg, client->getFD());
 			sendToUsersInChan(msg, client->getFD());
 		}
+	}
 }

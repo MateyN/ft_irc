@@ -286,7 +286,7 @@ bool	Channel::eraseOp(Client *client)
 			}
 		}
 	}
-	std::cout << "Not a member -> " + client->getNickname() << std::endl;
+	//std::cout << "Not a member -> " + client->getNickname() << std::endl;
 	return (false);
 
 }

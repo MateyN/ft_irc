@@ -111,7 +111,7 @@ class Server
 		bool						parseKickCommand(const std::string &kickCommand, std::string &chan, std::string &nick, std::string &reason);
 
 		//mode
-		std::vector<std::string> 	parseModeArguments(const std::string &command, size_t pos);
+		std::vector<std::string> 	parseModeArguments(std::string command);
 
 		class ExceptionServer : public std::exception
 		{
