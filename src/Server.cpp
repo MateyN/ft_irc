@@ -163,8 +163,7 @@ bool	Server::serverConnect()
 		// Init a new pollfd struct to monitor the client's socket
 		pollResult = poll(_pfds.data(), _pfds.size(), -1);
 		if (pollResult == ERROR)
-			std::cout << ERRNOMSG << strerror(errno) << std::endl;
-
+			std::cout << "Error in poll()" << std::endl;
 
 		for (unsigned int i = 0; i < _pfds.size(); i++)
 		{
@@ -177,7 +176,7 @@ bool	Server::serverConnect()
 					addrlen = sizeof(_addr);
 					cliSocket = accept(_socket, (struct sockaddr *)&_addr, &addrlen);
 					if (cliSocket == ERROR)
-						std::cout << ERRNOMSG << strerror(errno) << std::endl;
+						 std::cout << "Error in accept()" << std::endl;
 					else
 					// Create and init a new client obj and add to _cli vector
 					{
@@ -233,7 +232,7 @@ bool	Server::serverConnect()
 						if (storedBytes == 0)
 							std::cout << RED << "Socket number: " << send << " has been disconnected." << RESET << std::endl;
 						else
-							std::cout << ERRNOMSG << strerror(errno) << std::endl;
+							std::cout << "Error in recv()" << std::endl;
 
 						for (std::vector<Client*>::iterator	it = _cli.begin(); it != _cli.end(); it++)
 						{
