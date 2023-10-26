@@ -525,6 +525,11 @@ void Server::TOPIC(Client* client, Channel* channel)
     std::string msg;
 	size_t 		pos;
 
+    pos = cmd.find(":");
+	// std::cout << pos + 1 << std::endl;
+	// std::cout << cmd << std::endl;
+	if (pos + 1 >= cmd.size())
+		return;
     if (channel == NULL)
 	{
         errorMsg(ERR403_NOSUCHCHANNEL, client->getFD(), "", "", "", "");
@@ -536,19 +541,29 @@ void Server::TOPIC(Client* client, Channel* channel)
         msg = ":" + client->getNickname() + " TOPIC " + channel->getChanName();
         channel->setTopic("", client);
 		//msg += " (unset by " + client->getNickname() + ")";
+		msgSend(msg, client->getFD());
+	    sendToUsersInChan(msg, client->getFD());
     } 
-	else
+	else if (cmd.find(":") != std::string::npos)
 	{
     	pos = cmd.find(":");
+		std::cout << cmd << std::endl;
+
         if (pos != std::string::npos && (std::string::npos + 1) != cmd.size())
             topicName = cmd.substr(pos + 1);
         else
             topicName = cmd;
 		channel->setTopic(topicName, client);
 		msg = ": 332 " + client->getNickname() + " " + channel->getChanName() + " :" + channel->getTopic();
+		std::cout << cmd << std::endl;
+		msgSend(msg, client->getFD());
+	    sendToUsersInChan(msg, client->getFD());
 	}
-	msgSend(msg, client->getFD());
-    sendToUsersInChan(msg, client->getFD());
+	else 
+	{
+        errorMsg(ERR461_NEEDMOREPARAMS, client->getFD(), "", "", "", "");
+        return;
+    }
 }
 
 void	Server::PRIVMSG(Client *client, Channel *channel) 
